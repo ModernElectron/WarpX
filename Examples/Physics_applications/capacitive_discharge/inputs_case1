@@ -78,6 +78,6 @@ diagnostics.diags_names = diags
 diags.diag_type = Full
 diags.format = openpmd
 diags.openpmd_backend = h5
-diags.intervals = 12800
+diags.intervals = 499201:
 diags.fields_to_plot = phi rho_electrons rho_he_ions
 diags.file_prefix = ./diags_case1

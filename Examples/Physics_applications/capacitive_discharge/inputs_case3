@@ -4,13 +4,13 @@ warpx.const_dt = 4.609144542772861e-11
 warpx.do_electrostatic = labframe
 warpx.self_fields_required_precision = 1e-06
 
-amr.n_cell = 512 8
-amr.max_grid_size = 512
+amr.n_cell = 512 16
+amr.max_grid_size = 256
 amr.max_level = 0
 
 geometry.coord_sys = 0
 geometry.prob_lo = 0.0 0.0
-geometry.prob_hi = 0.067 0.001046875
+geometry.prob_hi = 0.067 0.00209375
 
 boundary.field_lo = pec periodic
 boundary.field_hi = pec periodic
@@ -78,6 +78,6 @@ diagnostics.diags_names = diags
 diags.diag_type = Full
 diags.format = openpmd
 diags.openpmd_backend = h5
-diags.intervals = 51200
+diags.intervals = 8140801:
 diags.fields_to_plot = phi rho_electrons rho_he_ions
 diags.file_prefix = ./diags_case3

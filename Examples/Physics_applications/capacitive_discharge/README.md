@@ -4,5 +4,5 @@ as well as an input file for a shortened simulation used in testing the MCC
 functionality.
 The published results from Turner et al. are provided in the folder
 reference_results/Turner_results/
-Results from running the 4 input cases in WarpX on (insert date) is also
+Results from running the first 2 input cases in WarpX in May 2021 is also
 provided in the reference_results/ folder.
