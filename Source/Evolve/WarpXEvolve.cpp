@@ -250,17 +250,20 @@ WarpX::Evolve (int numsteps)
             // positions are next pushed) so that the particles do not deposit out of bounds
             // and so that the fields are at the correct time in the output.
             bool const reset_fields = true;
-            #ifdef AMREX_USE_EB
-                AMREX_ALWAYS_ASSERT_WITH_MESSAGE(do_electrostatic == ElectrostaticSolverAlgo::LabFrame,
-                "Embedded boundary solver can only be used in the labframe."
-                );
-                DepositChargeDensity();
-                if (warpx_py_fieldsolver) warpx_py_fieldsolver;
+            if (warpx_py_fieldsolver) warpx_py_fieldsolver();
                 else AddSpaceChargeFieldLabFrame();
                 ComputeSpaceChargeField( reset_fields );
-            #else
-                ComputeSpaceChargeField( reset_fields );
-            #endif
+            // #ifdef AMREX_USE_EB
+            //     AMREX_ALWAYS_ASSERT_WITH_MESSAGE(do_electrostatic == ElectrostaticSolverAlgo::LabFrame,
+            //     "Embedded boundary solver can only be used in the labframe."
+            //     );
+            //     DepositChargeDensity();
+            //     if (warpx_py_fieldsolver) warpx_py_fieldsolver();
+            //     else AddSpaceChargeFieldLabFrame();
+            //     ComputeSpaceChargeField( reset_fields );
+            // #else
+            //     ComputeSpaceChargeField( reset_fields );
+            // #endif
         }
 
         amrex::Print()<< "STEP " << step+1 << " ends." << " TIME = " << cur_time

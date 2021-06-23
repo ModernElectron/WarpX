@@ -379,6 +379,9 @@ def isinstalledafterdeposition(f):
     return _afterdeposition.isinstalledfuncinlist(f)
 
 # ----------------------------------------------------------------------------
+def callfromfieldsolver(f):
+    installfieldsolver(f)
+    return f
 def installfieldsolver(f):
     """Adds a Adds a function to perform the field solve. Note that the C++ object
     warpx_py_fieldsolver is declared as a nullptr but once the call to set it
