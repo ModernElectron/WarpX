@@ -253,17 +253,6 @@ WarpX::Evolve (int numsteps)
             if (warpx_py_fieldsolver) warpx_py_fieldsolver();
                 else AddSpaceChargeFieldLabFrame();
                 ComputeSpaceChargeField( reset_fields );
-            // #ifdef AMREX_USE_EB
-            //     AMREX_ALWAYS_ASSERT_WITH_MESSAGE(do_electrostatic == ElectrostaticSolverAlgo::LabFrame,
-            //     "Embedded boundary solver can only be used in the labframe."
-            //     );
-            //     DepositChargeDensity();
-            //     if (warpx_py_fieldsolver) warpx_py_fieldsolver();
-            //     else AddSpaceChargeFieldLabFrame();
-            //     ComputeSpaceChargeField( reset_fields );
-            // #else
-            //     ComputeSpaceChargeField( reset_fields );
-            // #endif
         }
 
         amrex::Print()<< "STEP " << step+1 << " ends." << " TIME = " << cur_time
