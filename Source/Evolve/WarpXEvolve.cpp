@@ -241,7 +241,7 @@ WarpX::Evolve (int numsteps)
             mypc->SortParticlesByBin(sort_bin_size);
         }
 
-        if (warpx_py_beforeEsolve) warpx_py_beforeEsolve();
+        
         if( do_electrostatic != ElectrostaticSolverAlgo::None ) {
             // Electrostatic solver:
             // For each species: deposit charge and add the associated space-charge
@@ -249,10 +249,11 @@ WarpX::Evolve (int numsteps)
             // loop (i.e. immediately after a `Redistribute` and before particle
             // positions are next pushed) so that the particles do not deposit out of bounds
             // and so that the fields are at the correct time in the output.
+            if (warpx_py_beforeEsolve) warpx_py_beforeEsolve();
             bool const reset_fields = true;
             if (warpx_py_fieldsolver) warpx_py_fieldsolver();
-                else AddSpaceChargeFieldLabFrame();
-                ComputeSpaceChargeField( reset_fields );
+            else AddSpaceChargeFieldLabFrame();
+            ComputeSpaceChargeField( reset_fields );
         }
 
         amrex::Print()<< "STEP " << step+1 << " ends." << " TIME = " << cur_time
