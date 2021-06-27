@@ -48,6 +48,7 @@
 #include <AMReX_RealVect.H>
 #include <AMReX_Vector.H>
 #include <AMReX_VisMF.H>
+#include <AMReX_MultiFab.H>
 
 #include <AMReX_BaseFwd.H>
 #include <AMReX_AmrCoreFwd.H>
@@ -269,6 +270,24 @@ public:
 
     const amrex::MultiFab& getEfield_avg_fp (int lev, int direction) {return *Efield_avg_fp[lev][direction];}
     const amrex::MultiFab& getBfield_avg_fp (int lev, int direction) {return *Bfield_avg_fp[lev][direction];}
+
+    const amrex::MultiFab getGatheredPhi_fp (int lev) {
+
+        // get the full domain
+        amrex::Box domain_box = Geom(lev).Domain();
+        // make a new BoxArray from the domain Box
+        amrex::BoxArray ba(domain_box);
+        // make a DistributionMapping from the new BoxArray
+        amrex::DistributionMapping dm {ba};
+        // make a FabArray to hold the phi data
+        amrex::IntVect ngPhi = amrex::IntVect( AMREX_D_DECL(1,1,1) );
+        amrex::MultiFab mfdst(ba, dm, ncomps, ngPhi);
+        // copy data from the MultiFab with distributed Boxes to the new one
+        // with the single Box
+        mfdst.ParallelCopy(getphi_fp(lev));
+
+        return mfdst;
+    }
 
     bool DoPML () const {return do_pml;}
 

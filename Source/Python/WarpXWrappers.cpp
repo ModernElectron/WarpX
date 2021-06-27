@@ -342,6 +342,9 @@ extern "C"
     WARPX_GET_LOVECTS_SCALAR(warpx_getChargeDensityCPLoVects, WarpX::GetInstance().getrho_cp)
     WARPX_GET_LOVECTS_SCALAR(warpx_getChargeDensityFPLoVects, WarpX::GetInstance().getrho_fp)
 
+    WARPX_GET_SCALAR(warpx_getPhiFP, WarpX::GetInstance().getphi_fp)
+    WARPX_GET_SCALAR(warpx_getGatheredPhiFP, WarpX::GetInstance().getGatheredPhi_fp)
+
 #define WARPX_GET_FIELD_PML(FIELD, GETTER) \
     amrex::Real** FIELD(int lev, int direction, \
                         int *return_size, int *ncomps, int **ngrowvect, int **shapes) { \
