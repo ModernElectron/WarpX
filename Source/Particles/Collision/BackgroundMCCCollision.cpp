@@ -1,16 +1,22 @@
-/* Copyright 2021 Roelof Groenewald
+/* Copyright 2021 Modern Electron
  *
  * This file is part of WarpX.
  *
- * License: ????
+ * License: BSD-3-Clause-LBNL
  */
 #include "BackgroundMCCCollision.H"
 #include "MCCScattering.H"
+#include "Particles/ParticleCreation/FilterCopyTransform.H"
+#include "Particles/ParticleCreation/SmartCopy.H"
 #include "Utils/ParticleUtils.H"
 #include "Utils/WarpXUtil.H"
+#include "Utils/WarpXProfilerWrapper.H"
 #include "WarpX.H"
 
-// using namespace amrex::literals;
+#include <AMReX_ParmParse.H>
+#include <AMReX_Vector.H>
+
+#include <string>
 
 BackgroundMCCCollision::BackgroundMCCCollision (std::string const collision_name)
     : CollisionBase(collision_name)
@@ -53,6 +59,9 @@ BackgroundMCCCollision::BackgroundMCCCollision (std::string const collision_name
 
         auto process = new MCCProcess(scattering_process, cross_section_file, energy);
 
+        AMREX_ALWAYS_ASSERT_WITH_MESSAGE(process->m_type != MCCProcessType::INVALID,
+                                         "Cannot add an unknown MCC process type");
+
         // if the scattering process is ionization get the secondary species
         // only one ionization process is supported, the vector
         // m_ionization_processes is only used to make it simple to calculate
@@ -68,28 +77,12 @@ BackgroundMCCCollision::BackgroundMCCCollision (std::string const collision_name
             m_species_names.push_back(secondary_species);
 
             m_ionization_processes.push_back(process);
-            amrex::Gpu::synchronize();
         } else {
-            addProcess(process);
+            m_scattering_processes.push_back(process);
         }
+
+        amrex::Gpu::synchronize();
     }
-}
-
-void
-BackgroundMCCCollision::addProcess(MCCProcess* process)
-{
-    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(process != nullptr,
-                                     "Cannot add a NULL MCC process type");
-
-    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(process->m_type != MCCProcessType::INVALID,
-                                     "Cannot add an unknown MCC process type");
-
-    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(process->m_type != MCCProcessType::IONIZATION,
-                                     "Addition of ionization process requires special handling");
-
-    m_scattering_processes.push_back(process);
-
-    amrex::Gpu::synchronize();
 }
 
 /** Calculate the maximum collision frequency using a fixed energy grid that
@@ -151,16 +144,9 @@ BackgroundMCCCollision::doCollisions (amrex::Real cur_time, MultiParticleContain
         // dt has to be small enough that a linear expansion of the collision
         // probability is sufficiently accurately, otherwise the MCC results
         // will be very heavily affected by small changes in the timestep
-        if (coll_n > 0.1) {
-            amrex::Print() <<
-                "dt is too large to ensure accurate MCC results for "
-                           << m_species_names[0] << " collisions since nu_max*dt = "
-                           << coll_n << " > 0.1\n";
-            amrex::Abort();
-        }
-        amrex::Print() <<
-            "Setting up collisions for " << m_species_names[0] << " with total "
-            "collision probability: " << m_total_collision_prob << "\n";
+        AMREX_ALWAYS_ASSERT_WITH_MESSAGE(coll_n < 0.1,
+            "dt is too large to ensure accurate MCC results"
+        );
 
         if (ionization_flag) {
             // calculate maximum collision frequency for ionization
@@ -169,6 +155,10 @@ BackgroundMCCCollision::doCollisions (amrex::Real cur_time, MultiParticleContain
             // calculate total ionization probability
             auto coll_n_ioniz = m_nu_max_ioniz * dt;
             m_total_collision_prob_ioniz = 1.0 - std::exp(-coll_n_ioniz);
+
+            AMREX_ALWAYS_ASSERT_WITH_MESSAGE(coll_n_ioniz < 0.1,
+                "dt is too large to ensure accurate MCC results"
+            );
 
             // if an ionization process is included the secondary species mass
             // is taken as the background mass
@@ -180,6 +170,11 @@ BackgroundMCCCollision::doCollisions (amrex::Real cur_time, MultiParticleContain
         else if (m_background_mass == -1) {
             m_background_mass = species1.getMass();
         }
+
+        amrex::Print() <<
+            "Setting up collisions for " << m_species_names[0] << " with total "
+            "collision probability: " <<
+            m_total_collision_prob + m_total_collision_prob_ioniz << "\n";
 
         init_flag = true;
     }

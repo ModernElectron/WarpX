@@ -1,8 +1,8 @@
-/* Copyright 2021 Roelof Groenewald
+/* Copyright 2021 Modern Electron
  *
  * This file is part of WarpX.
  *
- * License: ????
+ * License: BSD-3-Clause-LBNL
  */
 #ifndef WARPX_PARTICLES_COLLISION_BACKGROUNDMCCCOLLISION_H_
 #define WARPX_PARTICLES_COLLISION_BACKGROUNDMCCCOLLISION_H_
@@ -10,7 +10,11 @@
 #include "Particles/MultiParticleContainer.H"
 #include "CollisionBase.H"
 #include "MCCProcess.H"
-#include <AMReX_ParmParse.H>
+
+#include <AMReX_REAL.H>
+#include <AMReX_GpuContainers.H>
+
+#include <string>
 
 class BackgroundMCCCollision
     : public CollisionBase
@@ -20,8 +24,6 @@ public:
     using VectorType = amrex::Gpu::ManagedVector<T>;
 
     BackgroundMCCCollision (std::string collision_name);
-
-    void addProcess(MCCProcess* process);
 
     amrex::Real get_nu_max ( VectorType<MCCProcess*> const& mcc_processes );
 
@@ -67,7 +69,7 @@ private:
     amrex::Real m_background_density;
     amrex::Real m_background_mass;
     amrex::Real m_total_collision_prob;
-    amrex::Real m_total_collision_prob_ioniz;
+    amrex::Real m_total_collision_prob_ioniz = 0;
     amrex::Real m_nu_max;
     amrex::Real m_nu_max_ioniz;
 };

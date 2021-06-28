@@ -1,8 +1,8 @@
-/* Copyright 2021 Roelof Groenewald
+/* Copyright 2021 Modern Electron
  *
  * This file is part of WarpX.
  *
- * License: ????
+ * License: BSD-3-Clause-LBNL
  */
 #ifndef WARPX_PARTICLES_COLLISION_MCCPROCESS_H_
 #define WARPX_PARTICLES_COLLISION_MCCPROCESS_H_
