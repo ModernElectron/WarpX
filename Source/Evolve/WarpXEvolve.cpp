@@ -276,12 +276,12 @@ WarpX::Evolve (int numsteps)
             // loop (i.e. immediately after a `Redistribute` and before particle
             // positions are next pushed) so that the particles do not deposit out of bounds
             // and so that the fields are at the correct time in the output.
-            const bool reset_fields = true;
+            bool const reset_fields = true;
 
 #ifdef ME_SOLVER
             AMREX_ALWAYS_ASSERT_WITH_MESSAGE(
                 do_electrostatic == ElectrostaticSolverAlgo::LabFrame,
-                "Embedded boundary solver can only be used in the labframe."
+                "ME solver can only be used in the labframe."
             );
             if (warpx_py_beforeEsolve) warpx_py_beforeEsolve();
             DepositChargeDensity();

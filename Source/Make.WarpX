@@ -100,12 +100,11 @@ ifeq ($(USE_EB),TRUE)
 endif
 
 ifeq ($(ME_SOLVER),TRUE)
-  include $(WARPX_HOME)/Source/FieldSolver/Make.package
   CXXFLAGS += -DME_SOLVER
   CFLAGS   += -DME_SOLVER
   FFLAGS   += -DME_SOLVER
   F90FLAGS += -DME_SOLVER
-  USERSuffix := $(USERSuffix).EB
+  USERSuffix := $(USERSuffix).ME_SOLVER
 endif
 
 ifeq ($(QED),TRUE)

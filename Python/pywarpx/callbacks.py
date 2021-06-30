@@ -29,7 +29,7 @@ Functions can be called at the following times:
  - beforestep <installbeforestep>: before the time step
  - afterstep <installafterstep>: after the time step
  - fieldsolver <installfieldsolver>: In place of the AddSpaceChargeFieldLabFrame() call but only in
-                                     an electrostatic simulation with WarpX_EB = ON
+                                     an electrostatic simulation with ME_Solver = ON
  - particlescraper <installparticlescraper>: just after the particle boundary conditions are applied
                                              but before lost particles are processed
  - particleloader <installparticleloader>: at the time that the standard particle loader is called
