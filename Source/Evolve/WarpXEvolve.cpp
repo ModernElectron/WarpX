@@ -284,7 +284,7 @@ WarpX::Evolve (int numsteps)
                 "Embedded boundary solver can only be used in the labframe."
             );
             if (warpx_py_beforeEsolve) warpx_py_beforeEsolve();
-            // WarpX::DepositChargeDensity();
+            WarpX::DepositChargeDensity();
             if (warpx_py_fieldsolver) warpx_py_fieldsolver();
             else AddSpaceChargeFieldLabFrame();
             ComputeSpaceChargeField( reset_fields );
