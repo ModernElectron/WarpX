@@ -99,6 +99,11 @@ ifeq ($(USE_EB),TRUE)
   USERSuffix := $(USERSuffix).EB
 endif
 
+ifeq ($(ME_Solver),TRUE)
+  include $(WARPX_HOME)/Source/FieldSolver/Make.package
+  USERSuffix := $(USERSuffix).EB
+endif
+
 ifeq ($(QED),TRUE)
   INCLUDE_LOCATIONS += $(PICSAR_HOME)/multi_physics/QED/include
   CXXFLAGS += -DWARPX_QED
