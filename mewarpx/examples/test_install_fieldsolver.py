@@ -10,8 +10,8 @@ from pywarpx import picmi
 
 # init_libwarpx must be run before importing some mewarpx modules
 from mewarpx import util as mwxutil
+
 mwxutil.init_libwarpx(ndim=2, rz=False)
-from pywarpx import _libwarpx
 
 # from pywarpx import fields
 from pywarpx import callbacks
@@ -100,52 +100,6 @@ ions = picmi.Species(
     initial_distribution=uniform_plasma_ion
 )
 
-''' Add back when MCC initialization has been added to mewarpx
-# MCC collisions
-cross_sec_direc = '/home/roelof/repository/ME_WarpX/Source/Particles/Collision/MCC_cross_sections/He/'
-mcc_electrons = picmi.MCCCollisions(
-    name='coll_elec',
-    species=electrons,
-    background_density=N_INERT,
-    background_temperature=T_INERT,
-    background_mass=ions.mass,
-    scattering_processes={
-        'elastic' : {
-            'cross_section' : cross_sec_direc+'electron_scattering.dat'
-        },
-        'excitation1' : {
-            'cross_section': cross_sec_direc+'excitation_1.dat',
-            'energy' : 19.82
-        },
-        'excitation2' : {
-            'cross_section': cross_sec_direc+'excitation_2.dat',
-            'energy' : 20.61
-        },
-        'ionization' : {
-            'cross_section' : cross_sec_direc+'ionization.dat',
-            'energy' : 24.55,
-            'species' : ions
-        },
-    }
-)
-mcc_ions = picmi.MCCCollisions(
-    name='coll_ion',
-    species=ions,
-    background_density=N_INERT,
-    background_temperature=T_INERT,
-    scattering_processes={
-        'elastic' : {
-            'cross_section' : cross_sec_direc+'ion_scattering.dat'
-        },
-        'back' : {
-            'cross_section' : cross_sec_direc+'ion_back_scatter.dat'
-        },
-        # 'charge_exchange' : {
-        #    'cross_section' : cross_sec_direc+'charge_exchange.dat'
-        # }
-    }
-)
-'''
 ##########################
 # numerics components
 ##########################
@@ -225,6 +179,7 @@ print('  Diag time = %.3e s (%i timesteps)' % (DIAG_INTERVAL, diag_steps))
 ##########################
 # Add ME diagnostic
 ##########################
+
 def install_beforeE():
     print("InstallBeforeE() install", flush=True)
 
@@ -247,31 +202,5 @@ diag_base.TextDiag(diag_steps=5, preset_string='perfdebug')
 ##########################
 # simulation run
 ##########################
-
-import matplotlib.pyplot as plt
-
-# my_solver = PoissonSolverPseudo1D(128, 16, D_CA / nx)
-
-# def dummy_solve():
-#     rho_data = mwxrun.get_rho_grid()[0]
-#     phi_data = mwxrun.get_phi_grid()[0]
-
-#     rho = rho_data[:,:,0].T
-
-#     phi = my_solver.solve(rho,
-#         VOLTAGE * np.sin(2.0*np.pi*FREQ* (mwxrun.get_it()-1.0)*mwxrun.get_dt())
-#     )
-
-#     # mwxrun.set_phi_grid(phi)
-
-#     #plt.plot(np.mean(rho_data[:,:,0], axis=1))
-#     plt.plot(np.mean(phi_data, axis=1), 'o-')
-#     plt.plot(np.mean(phi, axis=1), 'o-')
-
-#     #plt.plot(phi_data[:,4], 'o-')
-#     #plt.plot(phi[:,4], 'o-')
-#     plt.show()
-
-# callbacks.installfieldsolver(dummy_solve)
 
 sim.step(5)

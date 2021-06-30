@@ -1,7 +1,7 @@
 if(ME_Solver)
     target_sources(WarpX
       PRIVATE
-        ElectrostaticSolver_EB.cpp
+        ElectrostaticSolver_ME.cpp
         WarpXPushFieldsEM.cpp
         WarpX_QED_Field_Pushers.cpp
     )
