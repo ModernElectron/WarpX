@@ -268,7 +268,7 @@ WarpX::Evolve (int numsteps)
             mypc->SortParticlesByBin(sort_bin_size);
         }
 
-        
+
         if( do_electrostatic != ElectrostaticSolverAlgo::None ) {
             // Electrostatic solver:
             // For each species: deposit charge and add the associated space-charge
@@ -278,16 +278,17 @@ WarpX::Evolve (int numsteps)
             // and so that the fields are at the correct time in the output.
             const bool reset_fields = true;
 
-            if (warpx_py_beforeEsolve) warpx_py_beforeEsolve();
-#ifdef AMREX_USE_EB
+#ifdef ME_SOLVER
             AMREX_ALWAYS_ASSERT_WITH_MESSAGE(
                 do_electrostatic == ElectrostaticSolverAlgo::LabFrame,
                 "Embedded boundary solver can only be used in the labframe."
             );
-            DepositChargeDensity();
+            if (warpx_py_beforeEsolve) warpx_py_beforeEsolve();
+            // WarpX::DepositChargeDensity();
             if (warpx_py_fieldsolver) warpx_py_fieldsolver();
             else AddSpaceChargeFieldLabFrame();
             ComputeSpaceChargeField( reset_fields );
+            if (warpx_py_afterEsolve) warpx_py_afterEsolve();
 #else
             ComputeSpaceChargeField( reset_fields );
 #endif
