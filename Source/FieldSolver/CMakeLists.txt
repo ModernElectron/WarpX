@@ -1,4 +1,4 @@
-if(ME_EB)
+if(ME_Solver)
     target_sources(WarpX
       PRIVATE
         ElectrostaticSolver_EB.cpp
