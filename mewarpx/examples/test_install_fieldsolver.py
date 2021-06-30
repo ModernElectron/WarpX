@@ -18,7 +18,7 @@ from pywarpx import callbacks
 
 from mewarpx.mwxrun import mwxrun
 from mewarpx.diags_store import diag_base
-from mewarpx.poisson_psuedo_1d import PoissonSolverPseudo1D
+#f rom mewarpx.poisson_psuedo_1d import PoissonSolverPseudo1D
 
 from minerva import util as minutil
 
@@ -250,7 +250,7 @@ diag_base.TextDiag(diag_steps=5, preset_string='perfdebug')
 
 import matplotlib.pyplot as plt
 
-my_solver = PoissonSolverPseudo1D(128, 16, D_CA / nx)
+# my_solver = PoissonSolverPseudo1D(128, 16, D_CA / nx)
 
 # def dummy_solve():
 #     rho_data = mwxrun.get_rho_grid()[0]

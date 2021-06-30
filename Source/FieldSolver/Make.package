@@ -1,5 +1,5 @@
 CEXE_sources += WarpXPushFieldsEM.cpp
-ifeq ($(ME_Solver),TRUE)
+ifeq ($(ME_SOLVER),TRUE)
   CEXE_sources += ElectrostaticSolver_EB.cpp
 else
   CEXE_sources += ElectrostaticSolver.cpp
