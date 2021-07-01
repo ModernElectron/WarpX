@@ -7,6 +7,7 @@ from mewarpx import util as mwxutil
 mwxutil.init_libwarpx(ndim=2, rz=False)
 
 from mewarpx.mwxrun import mwxrun
+from mewarpx.diags_store import diag_base
 
 from pywarpx import picmi
 import pywarpx
