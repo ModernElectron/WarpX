@@ -271,22 +271,13 @@ public:
     const amrex::MultiFab& getEfield_avg_fp (int lev, int direction) {return *Efield_avg_fp[lev][direction];}
     const amrex::MultiFab& getBfield_avg_fp (int lev, int direction) {return *Bfield_avg_fp[lev][direction];}
 
-    const amrex::MultiFab getGatheredPhi_fp (int lev) {
+    const amrex::MultiFab& getGatheredPhi_fp (int lev) {
 
-        // get the full domain
-        amrex::Box domain_box = Geom(lev).Domain();
-        // make a new BoxArray from the domain Box
-        amrex::BoxArray ba(domain_box);
-        // make a DistributionMapping from the new BoxArray
-        amrex::DistributionMapping dm {ba};
-        // make a FabArray to hold the phi data
-        amrex::IntVect ngPhi = amrex::IntVect( AMREX_D_DECL(1,1,1) );
-        amrex::MultiFab mfdst(ba, dm, ncomps, ngPhi);
         // copy data from the MultiFab with distributed Boxes to the new one
         // with the single Box
-        mfdst.ParallelCopy(getphi_fp(lev));
+        full_phi_fp.ParallelCopy(getphi_fp(lev));
 
-        return mfdst;
+        return full_phi_fp;
     }
 
     bool DoPML () const {return do_pml;}
@@ -952,6 +943,8 @@ private:
     amrex::Vector<std::array< std::unique_ptr<amrex::MultiFab>, 3 > > Bfield_fp;
     amrex::Vector<std::array< std::unique_ptr<amrex::MultiFab>, 3 > > Efield_avg_fp;
     amrex::Vector<std::array< std::unique_ptr<amrex::MultiFab>, 3 > > Bfield_avg_fp;
+
+    amrex::MultiFab full_phi_fp;
 
     //EB grid info
     amrex::Vector<std::array< std::unique_ptr<amrex::MultiFab>, 3 > > m_edge_lengths;
