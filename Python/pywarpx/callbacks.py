@@ -383,7 +383,7 @@ def callfromfieldsolver(f):
     installfieldsolver(f)
     return f
 def installfieldsolver(f):
-    """Adds a Adds a function to perform the field solve. Note that the C++ object
+    """Adds a function to perform the field solve. Note that the C++ object
     warpx_py_fieldsolver is declared as a nullptr but once the call to set it
     to _c_fieldsolver below is executed it is no longer a nullptr, and therefore
     if (warpx_py_fieldsolver) evaluates to True. For this reason a fieldsolver
@@ -508,4 +508,3 @@ def isinstalledappliedfields(f):
     "Checks if the function is called when which applies fields"
     raise Exception('applied fields call back not implemented yet')
     return _appliedfields.isinstalledfuncinlist(f)
-
