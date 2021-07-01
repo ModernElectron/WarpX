@@ -2,10 +2,18 @@
 Monte-Carlo Collision script benchmark against case 1 results from
 Turner et al. (2013) - https://doi.org/10.1063/1.4775084
 """
+
+from mewarpx import util as mwxutil
+mwxutil.init_libwarpx(ndim=2, rz=False)
+
+from mewarpx.mwxrun import mwxrun
+
 from pywarpx import picmi
 import pywarpx
+from pywarpx import callbacks
 
 import numpy as np
+import matplotlib.pyplot as plt
 import time
 
 import shutil
@@ -215,10 +223,63 @@ sim.add_diagnostic(field_diag)
 # sim.add_diagnostic(restart_dumps)
 
 ##########################
+# WarpX and mewarpx initialization
+##########################
+
+mwxrun.init_run(simulation=sim)
+
+print('Set up simulation with')
+print('  dt = %.3e s' % DT)
+print('  Total time = %.3e s (%i timesteps)' % (TOTAL_TIME, max_steps))
+print('  Diag time = %.3e s (%i timesteps)' % (DIAG_INTERVAL, diag_steps))
+
+##########################
+# Add ME diagnostic
+##########################
+
+diag_base.TextDiag(diag_steps=diag_steps, preset_string='perfdebug')
+
+##########################
 # simulation run
 ##########################
 
 #sim.write_input_file(file_name = 'input2d')
 
-# step the simulation to the point where output should start
-sim.step(max_steps)
+#my_solver = PoissonSolverPseudo1D(nx, ny, D_CA / nx)
+
+def direct_solve():
+    rho_data = mwxrun.get_rho_grid()[0]
+    rho = rho_data[:,:,0].T
+    phi = my_solver.solve(rho,
+        VOLTAGE * np.sin(2.0*np.pi*FREQ* (mwxrun.get_it()-1.0)*mwxrun.get_dt())
+    )
+    mwxrun.set_phi_grid(phi)
+
+def plot_phi():
+    phi_data = mwxrun.get_gathered_phi_grid()
+    # phi_data = mwxrun.get_phi_grid()
+    if mwxrun.me == 0:
+        print(phi_data)
+        phi_data = phi_data[0]
+        print(mwxrun.me, phi_data.shape)
+        plt.plot(np.mean(phi_data[1:-1], axis=1), 'o-')
+    # plt.plot(phi_data[:,4], 'o-')
+    # plt.plot(phi[:,4], 'o-')
+
+# comment line below to use the multigrid solver
+# callbacks.installfieldsolver(direct_solve)
+
+callbacks.installafterstep(plot_phi)
+
+sim.step(5)
+if mwxrun.me == 0:
+    plt.ylim(-2, 28)
+    plt.xlabel('Cell number')
+    plt.ylabel('$\phi$ (eV)')
+    plt.title(
+        'Electrostatic potential at different times gathered\n'
+        'to the root proc from a 2 proc simulation'
+    )
+    plt.grid()
+    plt.savefig('gathered_phi.png')
+    plt.show()
