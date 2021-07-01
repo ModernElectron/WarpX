@@ -1145,8 +1145,6 @@ def get_mesh_charge_density_fp(level, include_ghosts=True):
     return _get_mesh_field_list(libwarpx.warpx_getChargeDensityFP, level, None, include_ghosts)
 
 
-<<<<<<< HEAD
-=======
 def get_mesh_phi_fp(level, include_ghosts=True):
     '''
 
@@ -1195,7 +1193,6 @@ def get_gathered_phi_fp(level):
     return _get_mesh_field_list(libwarpx.warpx_getGatheredPhiFP, level, None, True)
 
 
->>>>>>> c11a9e4e... added function to gather electrostatic potential for the entire domain on the root processor, only partially works
 def _get_mesh_array_lovects(level, direction, include_ghosts=True, getlovectsfunc=None):
     assert(0 <= level and level <= libwarpx.warpx_finestLevel())
 

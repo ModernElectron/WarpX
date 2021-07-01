@@ -44,6 +44,9 @@ class MEWarpXRun(object):
         simulation.initialize_inputs()
         simulation.initialize_warpx()
 
+        self.me = _libwarpx.libwarpx.warpx_getMyProc()
+        self.n_procs = _libwarpx.libwarpx.warpx_getNProcs()
+
         self._set_geom_str()
         self._set_grid_params()
 

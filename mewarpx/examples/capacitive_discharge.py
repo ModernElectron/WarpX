@@ -2,8 +2,15 @@
 Monte-Carlo Collision script benchmark against case 1 results from
 Turner et al. (2013) - https://doi.org/10.1063/1.4775084
 """
+
+from mewarpx import util as mwxutil
+mwxutil.init_libwarpx(ndim=2, rz=False)
+
+from mewarpx.mwxrun import mwxrun
+
 from pywarpx import picmi
 import pywarpx
+from pywarpx import callbacks
 
 import numpy as np
 import time
@@ -215,12 +222,29 @@ sim.add_diagnostic(field_diag)
 # sim.add_diagnostic(restart_dumps)
 
 ##########################
+# WarpX and mewarpx initialization
+##########################
+
+mwxrun.init_run(simulation=sim)
+
+print('Set up simulation with')
+print('  dt = %.3e s' % DT)
+print('  Total time = %.3e s (%i timesteps)' % (TOTAL_TIME, max_steps))
+print('  Diag time = %.3e s (%i timesteps)' % (DIAG_INTERVAL, diag_steps))
+
+##########################
+# Add ME diagnostic
+##########################
+
+diag_base.TextDiag(diag_steps=diag_steps, preset_string='perfdebug')
+
+##########################
 # simulation run
 ##########################
 
 import matplotlib.pyplot as plt
 
-my_solver = PoissonSolverPseudo1D(nx, ny, D_CA / nx)
+#my_solver = PoissonSolverPseudo1D(nx, ny, D_CA / nx)
 
 def direct_solve():
     rho_data = mwxrun.get_rho_grid()[0]
