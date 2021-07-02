@@ -275,9 +275,9 @@ public:
 
         // copy data from the MultiFab with distributed Boxes to the new one
         // with the single Box
-        full_phi_fp.ParallelCopy(getphi_fp(lev));
+        (*full_phi_fp[lev]).ParallelCopy(getphi_fp(lev));
 
-        return full_phi_fp;
+        return *full_phi_fp[lev];
     }
 
     bool DoPML () const {return do_pml;}
@@ -938,13 +938,12 @@ private:
     amrex::Vector<            std::unique_ptr<amrex::MultiFab>      > G_fp;
     amrex::Vector<            std::unique_ptr<amrex::MultiFab>      > rho_fp;
     amrex::Vector<            std::unique_ptr<amrex::MultiFab>      > phi_fp;
+    amrex::Vector<            std::unique_ptr<amrex::MultiFab>      > full_phi_fp;
     amrex::Vector<std::array< std::unique_ptr<amrex::MultiFab>, 3 > > current_fp;
     amrex::Vector<std::array< std::unique_ptr<amrex::MultiFab>, 3 > > Efield_fp;
     amrex::Vector<std::array< std::unique_ptr<amrex::MultiFab>, 3 > > Bfield_fp;
     amrex::Vector<std::array< std::unique_ptr<amrex::MultiFab>, 3 > > Efield_avg_fp;
     amrex::Vector<std::array< std::unique_ptr<amrex::MultiFab>, 3 > > Bfield_avg_fp;
-
-    amrex::MultiFab full_phi_fp;
 
     //EB grid info
     amrex::Vector<std::array< std::unique_ptr<amrex::MultiFab>, 3 > > m_edge_lengths;

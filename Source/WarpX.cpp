@@ -259,6 +259,7 @@ WarpX::WarpX ()
     G_fp.resize(nlevs_max);
     rho_fp.resize(nlevs_max);
     phi_fp.resize(nlevs_max);
+    full_phi_fp.resize(nlevs_max);
     current_fp.resize(nlevs_max);
     Efield_fp.resize(nlevs_max);
     Bfield_fp.resize(nlevs_max);
@@ -1223,6 +1224,7 @@ WarpX::ClearLevel (int lev)
     G_fp  [lev].reset();
     rho_fp[lev].reset();
     phi_fp[lev].reset();
+    full_phi_fp[lev].reset();
     F_cp  [lev].reset();
     G_cp  [lev].reset();
     rho_cp[lev].reset();
@@ -1448,7 +1450,8 @@ WarpX::AllocLevelMFs (int lev, const BoxArray& ba, const DistributionMapping& dm
         Vector<int> pmap = {0};
         dm_full.define(pmap);
         // make a FabArray to hold the phi data
-        full_phi_fp.define(ba_full, dm_full, ncomps, ngPhi);
+        full_phi_fp[lev] = std::make_unique<MultiFab>(amrex::convert(ba_full,phi_nodal_flag),dm_full,ncomps,ngPhi,tag("full_phi_fp"));
+        full_phi_fp[lev]->setVal(0.);
     }
 
     if (do_subcycling == 1 && lev == 0)
