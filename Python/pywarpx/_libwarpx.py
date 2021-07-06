@@ -1197,12 +1197,12 @@ def get_gathered_phi_fp(level):
     return _get_mesh_field_list(libwarpx.warpx_getGatheredPhiFP, level, None, True)
 
 def set_phi_grid_fp(level):
-    """Writes new phi data to C++, pointed to by phi_ptr."""
+    """This writes new phi data to warpx"""
     libwarpx.warpx_setPhiGridFP(level)
     return
 
 def get_pointer_full_phi_fp(level):
-    """Gets the pointer to the full phi grid multifab"""
+    """This returns the full phi grid multifab from warpx"""
     return _get_mesh_field_list(libwarpx.warpx_getPointerFullPhiFP, level, None, True)
 
 def _get_mesh_array_lovects(level, direction, include_ghosts=True, getlovectsfunc=None):
