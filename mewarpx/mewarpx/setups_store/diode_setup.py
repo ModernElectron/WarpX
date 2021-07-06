@@ -293,7 +293,7 @@ class DiodeRun_V1(object):
 
         # create the grid
         if self.dim == 1:
-            raise NotImplementedError("Not yet implemented in mewarpx")
+            raise NotImplementedError("1D grid is not yet implemented in mewarpx")
         elif self.dim == 2:
             self.grid = picmi.Cartesian2DGrid(
                             number_of_cells=[nx, nz],
@@ -368,6 +368,7 @@ class DiodeRun_V1(object):
         # WarpX/Directsolver options
         print('### Init Diode Solver Setup ###')
         if self.dim == 1:
+            raise NotImplementedError("1D solving is not yet implemented in mewarpx")
             self.solver = poisson1d.PoissonSolver1D()
         elif self.dim == 2:
             self.solver = warp.MultiGrid2D()
@@ -381,7 +382,7 @@ class DiodeRun_V1(object):
         warp.registersolver(self.solver)
 
     def init_conductors(self):
-        raise NotImplementedError("Not yet implemented in mewarpx")
+        raise NotImplementedError("Diode conductors are not yet implemented in mewarpx")
         print('### Init Diode Conductors Setup ###')
         # Create source conductors a.k.a the cathode
         self.cathode = warp.ZPlane(zcent=0., zsign=-1., voltage=self.V_CATHODE,
@@ -403,7 +404,7 @@ class DiodeRun_V1(object):
         self.surface_list = [self.cathode, self.anode_plane]
 
     def init_scraper(self):
-        raise NotImplementedError("Not yet implemented in mewarpx")
+        raise NotImplementedError("Diode scraper is not yet implemented in mewarpx")
         print('### Init Diode Scraper Setup ###')
         profile_decorator = None
         if self.PROFILE_DIAG:
@@ -432,7 +433,7 @@ class DiodeRun_V1(object):
             )
 
     def init_injectors(self):
-        raise NotImplementedError("Not yet implemented in mewarpx")
+        raise NotImplementedError("Diode injectors are not yet implemented in mewarpx")
         print('### Init Diode Injectors Setup ###')
         ####################################################################
         # Beam and injection setup, output RunInfo                         #
@@ -486,7 +487,7 @@ class DiodeRun_V1(object):
 
 
     def init_inert_gas_ionization(self):
-        raise NotImplementedError("Not yet implemented in mewarpx")
+        raise NotImplementedError("Inert gas is not yet implemented in mewarpx")
         print('### Init Diode Inert Gas Ionization Setup ###')
 
         # Set up ion and electron species
@@ -498,7 +499,7 @@ class DiodeRun_V1(object):
                                     self.P_AR, self.T_AR)
 
     def init_reflection(self):
-        raise NotImplementedError("Not yet implemented in mewarpx")
+        raise NotImplementedError("Diode reflection is not yet implemented in mewarpx")
         print('### Init Diode Reflection Setup ###')
         exclude_particles = []
 
@@ -546,7 +547,7 @@ class DiodeRun_V1(object):
             )
 
     def init_merging(self):
-        raise NotImplementedError("Not yet implemented in mewarpx")
+        raise NotImplementedError("Diode merging is not yet implemented in mewarpx")
         print('### Init Diode Merging ###')
         self.merger = merging.Merger(
             species=self.injector.species,
@@ -558,7 +559,7 @@ class DiodeRun_V1(object):
         )
 
     def init_traceparticles(self):
-        raise NotImplementedError("Not yet implemented in mewarpx")
+        raise NotImplementedError("Diode TraceParticles is not yet implemented in mewarpx")
         print('### Init Diode TraceParticles ###')
         self.trace_species = diags.TraceSpecies(
             numsteps=self.diag_steps-1, save_stride=2, write=True,
@@ -571,7 +572,7 @@ class DiodeRun_V1(object):
         )
 
     def init_runinfo(self):
-        raise NotImplementedError("Not yet implemented in mewarpx")
+        raise NotImplementedError("Diode Runinfo is not yet implemented in mewarpx")
         print('### Init Diode Runinfo Setup ###')
         # UNTESTED method of passing runvars at present!
         runvars = DiodeRun_V1.__dict__.copy()
@@ -597,7 +598,7 @@ class DiodeRun_V1(object):
         self.runinfo.save()
 
     def init_fluxdiag(self):
-        raise NotImplementedError("Not yet implemented in mewarpx")
+        raise NotImplementedError("Diode FluxDiag is not yet implemented in mewarpx")
         print('### Init Diode FluxDiag ###')
         self.fluxdiag = diags.FluxDiag(
             diag_steps=self.diag_steps,
