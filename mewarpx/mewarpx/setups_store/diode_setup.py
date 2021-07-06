@@ -17,9 +17,6 @@ from metools import runinfo, runtools, util, warputil
 from metools.warputil import e
 
 
-# [[[TODO]]] I would keep the overall structure here, but raise
-# NotImplementedError("Not yet implemented in mewarpx") for functions that
-# can't be run yet.
 class DiodeRun_V1(object):
 
     """A combination of settings and initialization functions to standardize
@@ -252,7 +249,6 @@ class DiodeRun_V1(object):
         if init_warpx:
             self.init_warpx()
 
-    # [[[TODO]]] This part can be fully replaced with the WarpX version.
     def init_base(self):
         print('### Init Diode Base Setup ###')
 
@@ -352,23 +348,24 @@ class DiodeRun_V1(object):
         # Particle decomposition - each processor keeps particles across full
         # domain
         # No field decomposition - each processor solves field itself
-        self.setupinfo = gentools.SetupCalcs(
-            cathode_temp=self.CATHODE_TEMP,
-            cathode_phi=self.CATHODE_PHI,
-            cathode_A=self.CATHODE_A,
-            V_anode=self.V_ANODE_CATHODE,
-            V_grid=self.V_ANODE_CATHODE,
-            D_CG=self.D_CA,
-            CFL_factor=self.CFL_FACTOR,
-            transverse_fac=self.TRANSVERSE_FAC,
-            diag_crossings=self.DIAG_CROSSINGS,
-            total_crossings=self.TOTAL_CROSSINGS,
-            check_debye_length=self.CHECK_DEBYE_LENGTH,
-            dt=self.DT,
-            part_full_decomp=self.PART_FULL_DECOMP,
-            no_fs_decomp=self.NO_FS_DECOMP,
-            use_B=False,
-        )
+
+        # self.setupinfo = gentools.SetupCalcs(
+        #     cathode_temp=self.CATHODE_TEMP,
+        #     cathode_phi=self.CATHODE_PHI,
+        #     cathode_A=self.CATHODE_A,
+        #     V_anode=self.V_ANODE_CATHODE,
+        #     V_grid=self.V_ANODE_CATHODE,
+        #     D_CG=self.D_CA,
+        #     CFL_factor=self.CFL_FACTOR,
+        #     transverse_fac=self.TRANSVERSE_FAC,
+        #     diag_crossings=self.DIAG_CROSSINGS,
+        #     total_crossings=self.TOTAL_CROSSINGS,
+        #     check_debye_length=self.CHECK_DEBYE_LENGTH,
+        #     dt=self.DT,
+        #     part_full_decomp=self.PART_FULL_DECOMP,
+        #     no_fs_decomp=self.NO_FS_DECOMP,
+        #     use_B=False,
+        # )
 
     def init_solver(self):
         print('### Init Diode Solver Setup ###')
