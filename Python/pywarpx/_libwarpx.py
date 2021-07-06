@@ -171,6 +171,7 @@ libwarpx.warpx_getCurrentDensityFPLoVects_PML.restype = _LP_c_int
 libwarpx.warpx_getChargeDensityCP.restype = _LP_LP_c_real
 libwarpx.warpx_getChargeDensityCPLoVects.restype = _LP_c_int
 libwarpx.warpx_getChargeDensityFP.restype = _LP_LP_c_real
+libwarpx.warpx_getGatheredChargeDensityFP.restype = _LP_LP_c_real
 libwarpx.warpx_getChargeDensityFPLoVects.restype = _LP_c_int
 libwarpx.warpx_getPhiFP.restype = _LP_LP_c_real
 libwarpx.warpx_getGatheredPhiFP.restype = _LP_LP_c_real
@@ -1145,6 +1146,28 @@ def get_mesh_charge_density_fp(level, include_ghosts=True):
     '''
 
     return _get_mesh_field_list(libwarpx.warpx_getChargeDensityFP, level, None, include_ghosts)
+
+
+def get_gathered_charge_density_fp(level):
+    '''
+
+    This returns a single numpy arrays containing the mesh charge density
+    data on the grid gathered from all processes. This version returns
+    the density on the fine patch for the given level.
+
+    Parameters
+    ----------
+
+        level          : the AMR level to get the data for
+
+    Returns
+    -------
+
+        A numpy array.
+
+    '''
+
+    return _get_mesh_field_list(libwarpx.warpx_getGatheredChargeDensityFP, level, None, True)
 
 
 def get_mesh_phi_fp(level, include_ghosts=True):

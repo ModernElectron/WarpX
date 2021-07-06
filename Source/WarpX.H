@@ -271,6 +271,15 @@ public:
     const amrex::MultiFab& getEfield_avg_fp (int lev, int direction) {return *Efield_avg_fp[lev][direction];}
     const amrex::MultiFab& getBfield_avg_fp (int lev, int direction) {return *Bfield_avg_fp[lev][direction];}
 
+    const amrex::MultiFab& getGatheredRho_fp (int lev) {
+
+        // copy data from the MultiFab with distributed Boxes to the new one
+        // with the single Box
+        (*full_rho_fp[lev]).ParallelCopy(getrho_fp(lev));
+
+        return *full_rho_fp[lev];
+    }
+
     const amrex::MultiFab& getGatheredPhi_fp (int lev) {
 
         // copy data from the MultiFab with distributed Boxes to the new one
@@ -937,6 +946,7 @@ private:
     amrex::Vector<            std::unique_ptr<amrex::MultiFab>      > F_fp;
     amrex::Vector<            std::unique_ptr<amrex::MultiFab>      > G_fp;
     amrex::Vector<            std::unique_ptr<amrex::MultiFab>      > rho_fp;
+    amrex::Vector<            std::unique_ptr<amrex::MultiFab>      > full_rho_fp;
     amrex::Vector<            std::unique_ptr<amrex::MultiFab>      > phi_fp;
     amrex::Vector<            std::unique_ptr<amrex::MultiFab>      > full_phi_fp;
     amrex::Vector<std::array< std::unique_ptr<amrex::MultiFab>, 3 > > current_fp;

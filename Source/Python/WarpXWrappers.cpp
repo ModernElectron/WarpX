@@ -338,6 +338,7 @@ extern "C"
 
     WARPX_GET_SCALAR(warpx_getChargeDensityCP, WarpX::GetInstance().getrho_cp)
     WARPX_GET_SCALAR(warpx_getChargeDensityFP, WarpX::GetInstance().getrho_fp)
+    WARPX_GET_SCALAR(warpx_getGatheredChargeDensityFP, WarpX::GetInstance().getGatheredRho_fp)
 
     WARPX_GET_LOVECTS_SCALAR(warpx_getChargeDensityCPLoVects, WarpX::GetInstance().getrho_cp)
     WARPX_GET_LOVECTS_SCALAR(warpx_getChargeDensityFPLoVects, WarpX::GetInstance().getrho_fp)
