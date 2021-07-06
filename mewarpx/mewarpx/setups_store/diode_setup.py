@@ -7,7 +7,7 @@ import numpy as np
 
 # [[[TODO]]] These imports should mostly be removed, but if they can be changed
 # to current functionality that would be great.
-from metools import cs_ionization, diags, emission, gentools
+from metools import diags, emission, gentools
 from metools import init_restart_util, mcc, merging
 from metools import particlescraper1d, poisson1d, reflection, resultsinfo
 from metools import runinfo, runtools, util, warputil
@@ -49,21 +49,6 @@ class DiodeRun_V1(object):
     P_AR = 4.0  # in Torr
     # Determine neutral temperature and density
     T_AR = 0.5 * (CATHODE_TEMP + ANODE_TEMP)  # rough approximation
-
-    # [[[TODO]]] Do go ahead and remove all Cs-ionization-related
-    # functionality.
-    # ### CS IONIZATION ###
-    P_CS = 1.0  # in Torr
-    T_CS = 0.5 * (CATHODE_TEMP + ANODE_TEMP)  # rough approximation
-    SUBCYCLE_CS = 20
-    # Number of bins in Z
-    ZBINS_CS = 30
-    # Number of bins in X
-    XBINS_CS = 3
-    # Number of Cs particles to inject per timestep
-    NPARTPERSTEP_CS = 100
-    # Number of particles to sample from for Cs injection
-    SAMPLES_CS = 1000
 
     # ### PHYSICS MODEL SETTINGS ###
     # Beam velocity spread in transverse vs longitudinal
@@ -214,8 +199,7 @@ class DiodeRun_V1(object):
         init_scraper=True,
         init_injectors=True,
         init_reflection=False,
-        init_cs_ionization=False,
-        init_ar_ionization=False,
+        init_inert_gas_ionization=False,
         init_merging=False,
         init_traceparticles=False,
         init_runinfo=False,
@@ -239,10 +223,8 @@ class DiodeRun_V1(object):
             self.init_scraper()
         if init_injectors:
             self.init_injectors()
-        if init_cs_ionization:
-            self.init_cs_ionization()
-        if init_ar_ionization:
-            self.init_ar_ionization()
+        if init_inert_gas_ionization:
+            self.init_inert_gas_ionization()
         if init_reflection:
             self.init_reflection()
         if init_merging:
@@ -399,8 +381,7 @@ class DiodeRun_V1(object):
         warp.registersolver(self.solver)
 
     def init_conductors(self):
-        # [[[TODO]]] Not implemented until thermionic emission task is merged
-        # in
+        raise NotImplementedError("Not yet implemented in mewarpx")
         print('### Init Diode Conductors Setup ###')
         # Create source conductors a.k.a the cathode
         self.cathode = warp.ZPlane(zcent=0., zsign=-1., voltage=self.V_CATHODE,
@@ -422,7 +403,7 @@ class DiodeRun_V1(object):
         self.surface_list = [self.cathode, self.anode_plane]
 
     def init_scraper(self):
-        # [[[TODO]]] not implented for a while
+        raise NotImplementedError("Not yet implemented in mewarpx")
         print('### Init Diode Scraper Setup ###')
         profile_decorator = None
         if self.PROFILE_DIAG:
@@ -451,8 +432,7 @@ class DiodeRun_V1(object):
             )
 
     def init_injectors(self):
-        # [[[TODO]]] Not implemented until thermionic emission task is merged
-        # in
+        raise NotImplementedError("Not yet implemented in mewarpx")
         print('### Init Diode Injectors Setup ###')
         ####################################################################
         # Beam and injection setup, output RunInfo                         #
@@ -504,44 +484,26 @@ class DiodeRun_V1(object):
                 self.CATHODE_PHI, self.CATHODE_A
             )
 
-    def init_cs_ionization(self):
-        # [[[TODO]]] Remove entirely
-        print('### Init Diode Cs Ionization Setup ###')
+
+    def init_inert_gas_ionization(self):
+        raise NotImplementedError("Not yet implemented in mewarpx")
+        print('### Init Diode Inert Gas Ionization Setup ###')
 
         # Set up ion and electron species
-        self.cs_i = warp.Species(type=warp.Caesium, charge_state=1, name='cs_i')
-        self.cs_i.sw = self.injector.species.sw
-
-        # Now set up the Cs injector
-        self.cs_injector = cs_ionization.CsMultistepIonizationInjector(
-            self.injector.species, self.cs_i, self.P_CS, self.T_CS,
-            subcycle=self.SUBCYCLE_CS,
-            xbins=self.XBINS_CS, zbins=self.ZBINS_CS,
-            npart_per_step=self.NPARTPERSTEP_CS,
-            update_steps=None, nsteps_to_average=None
-        )
-
-    def init_ar_ionization(self):
-        # [[[TODO]]] not implented for a while. Rename from "Ar" to "inert_gas"
-        print('### Init Diode Ar Ionization Setup ###')
-
-        # Set up ion and electron species
-        self.ar_i = warp.Species(type=warp.Argon, charge_state=1, name='ar_i')
-        self.ar_i.sw = self.injector.species.sw
+        self.inert_gas_i = warp.Species(type=warp.Argon, charge_state=1, name='ar_i')
+        self.inert_gas_i.sw = self.injector.species.sw
 
         # Now set up the ion injector using MCC for ionization
         self.ion_injector = mcc.MCC(self.injector.species, self.ar_i,
                                     self.P_AR, self.T_AR)
 
     def init_reflection(self):
-        # [[[TODO]]] not implented for a while
+        raise NotImplementedError("Not yet implemented in mewarpx")
         print('### Init Diode Reflection Setup ###')
         exclude_particles = []
 
         if hasattr(self, 'ar_i'):
             exclude_particles.append(self.ar_i)
-        if hasattr(self, 'cs_i'):
-            exclude_particles.append(self.cs_i)
         # Set up reflection
         self.reflector = reflection.Reflection(
             scraper=self.scraper, shapelist=self.surface_list,
@@ -584,7 +546,7 @@ class DiodeRun_V1(object):
             )
 
     def init_merging(self):
-        # [[[TODO]]] not implented for a while
+        raise NotImplementedError("Not yet implemented in mewarpx")
         print('### Init Diode Merging ###')
         self.merger = merging.Merger(
             species=self.injector.species,
@@ -596,7 +558,7 @@ class DiodeRun_V1(object):
         )
 
     def init_traceparticles(self):
-        # [[[TODO]]] not implented for a while
+        raise NotImplementedError("Not yet implemented in mewarpx")
         print('### Init Diode TraceParticles ###')
         self.trace_species = diags.TraceSpecies(
             numsteps=self.diag_steps-1, save_stride=2, write=True,
@@ -609,7 +571,7 @@ class DiodeRun_V1(object):
         )
 
     def init_runinfo(self):
-        # [[[TODO]]] not implented for a while
+        raise NotImplementedError("Not yet implemented in mewarpx")
         print('### Init Diode Runinfo Setup ###')
         # UNTESTED method of passing runvars at present!
         runvars = DiodeRun_V1.__dict__.copy()
@@ -617,9 +579,7 @@ class DiodeRun_V1(object):
 
         injector_dict = {'cathode': self.injector}
         if hasattr(self, 'ion_injector'):
-            injector_dict['ar_ionization'] = self.ion_injector
-        if hasattr(self, 'cs_injector'):
-            injector_dict['cs_ionization'] = self.cs_injector
+            injector_dict['inert_gas_ionization'] = self.ion_injector
         surface_dict = {'cathode': self.cathode, 'anode': self.anode_plane}
 
         # Output runinfo
@@ -637,7 +597,7 @@ class DiodeRun_V1(object):
         self.runinfo.save()
 
     def init_fluxdiag(self):
-        # [[[TODO]]] not implented for a while
+        raise NotImplementedError("Not yet implemented in mewarpx")
         print('### Init Diode FluxDiag ###')
         self.fluxdiag = diags.FluxDiag(
             diag_steps=self.diag_steps,
