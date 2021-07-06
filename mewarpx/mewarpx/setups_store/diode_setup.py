@@ -364,22 +364,18 @@ class DiodeRun_V1(object):
         self.total_timesteps = self.setupinfo.total_timesteps
 
     def init_solver(self):
-        # [[[TODO]]] Init solver here should still make sense, with
-        # WarpX/Directsolver options
         print('### Init Diode Solver Setup ###')
         if self.dim == 1:
             raise NotImplementedError("1D solving is not yet implemented in mewarpx")
             self.solver = poisson1d.PoissonSolver1D()
-        elif self.dim == 2:
-            self.solver = warp.MultiGrid2D()
-            self.solver.mgverbose = 1 if self.NONINTERAC else -1
-            self.solver.mgmaxiters = 10000
-        elif self.dim == 3:
-            self.solver = warp.MultiGrid3D()
-            self.solver.mgverbose = 1 if self.NONINTERAC else -1
-            self.solver.mgmaxiters = 10000
-
-        warp.registersolver(self.solver)
+        elif self.dim == 2 or self.dim == 3:
+            self.solver = picmi.ElectrostaticSolver(
+                grid=self.grid,
+                method='Multigrid',
+                required_precision=1e-6,
+                maximum_iterations=10000
+            )
+            self.solver.self_fields_verbosity = 2 if self.NONINTERAC else 0
 
     def init_conductors(self):
         raise NotImplementedError("Diode conductors are not yet implemented in mewarpx")
