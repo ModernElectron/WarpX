@@ -199,8 +199,8 @@ class MEWarpXRun(object):
         # only proc 0 has the gathered phi grid so only it should set
         # the phi grid
         if self.me == 0:
+            # get phi multifab from warpx
             phi_ptr = _libwarpx.get_pointer_full_phi_fp(self.lev)
-            # use get_gathered_phi_fp to get pointer to phi grid
             try:
                 phi_ptr[0][:] = phi_data
             except ValueError:

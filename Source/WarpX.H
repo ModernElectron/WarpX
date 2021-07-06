@@ -273,12 +273,12 @@ public:
     const amrex::MultiFab& getBfield_avg_fp (int lev, int direction) {return *Bfield_avg_fp[lev][direction];}
 
     const amrex::MultiFab& getGatheredPhi_fp (int lev) {
-
         // copy data from the MultiFab with distributed Boxes to the new one
         // with the single Box
-        (*full_phi_fp[lev]).ParallelCopy(*get_pointer_phi_fp(lev));
+        amrex::MultiFab* phi_mf = get_pointer_full_phi_fp(lev);
+        (*phi_mf).ParallelCopy(*get_pointer_phi_fp(lev));
 
-        return *full_phi_fp[lev];
+        return *phi_mf;
     }
 
     void setPhiGrid_fp (int lev) {
