@@ -6,6 +6,8 @@ import sys
 import numpy as np
 from pywarpx import picmi
 
+from mewarpx.mwxrun import mwxrun
+
 # [[[TODO]]] These imports should mostly be removed, but if they can be changed
 # to current functionality that would be great.
 from metools import diags, emission, gentools
@@ -153,7 +155,10 @@ class DiodeRun_V1(object):
     # diagnostic periods that cover transient behavior, and should thus often be
     # disabled in short unit tests.
     CHECK_CHARGE_CONSERVATION = True
-
+    # Get diagnostic information every DIAG_STEPS setps.
+    DIAG_STEPS = None
+    # The total timesteps of the simulation
+    TOTAL_TIMESTEPS = None
     # MERGING_DV controls dv bin width
     MERGING_DV = 1e5
     # MERGING_PERPERIOD controls number of merges per diag_steps
@@ -210,7 +215,7 @@ class DiodeRun_V1(object):
         init_runinfo=False,
         init_fluxdiag=False,
         init_resultsinfo=False,
-        generate=False
+        init_warpx=False
     ):
         """Perform each part of setup if requested.
 
@@ -244,8 +249,8 @@ class DiodeRun_V1(object):
             self.init_resultsinfo()
         # [[[TODO]]] Probably change this to "init_warpx" both for the keyword,
         # and call the correct mwxrun initialize function.
-        if generate:
-            warputil.warp_generate()
+        if init_warpx:
+            self.init_warpx()
 
     # [[[TODO]]] This part can be fully replaced with the WarpX version.
     def init_base(self):
@@ -364,8 +369,6 @@ class DiodeRun_V1(object):
             no_fs_decomp=self.NO_FS_DECOMP,
             use_B=False,
         )
-        self.diag_steps = self.setupinfo.diag_steps
-        self.total_timesteps = self.setupinfo.total_timesteps
 
     def init_solver(self):
         print('### Init Diode Solver Setup ###')
@@ -463,15 +466,15 @@ class DiodeRun_V1(object):
             )
 
         if self.NONINTERAC:
-            runtools.set_noninteracting(solvefreq=self.diag_steps)
+            runtools.set_noninteracting(solvefreq=self.DIAG_STEPS)
             weight = (gentools.J_RD(
                 self.CATHODE_TEMP, self.CATHODE_PHI, self.CATHODE_A)
                     * self.emitter.area
-                    * warp.top.dt * self.diag_steps
+                    * warp.top.dt * self.DIAG_STEPS
                     / e / self.NONINTERAC_WAVENUM)
             self.injector = emission.FixedNumberInjector(
                 self.emitter, 'beam', npart=self.NONINTERAC_WAVENUM,
-                injectfreq=self.diag_steps,
+                injectfreq=self.DIAG_STEPS,
                 weight=weight
             )
         else:
@@ -551,7 +554,7 @@ class DiodeRun_V1(object):
         print('### Init Diode Merging ###')
         self.merger = merging.Merger(
             species=self.injector.species,
-            period=self.diag_steps // self.MERGING_PERPERIOD,
+            period=self.DIAG_STEPS // self.MERGING_PERPERIOD,
             dv=self.MERGING_DV,
             dxfac=self.MERGING_DXFAC,
             xfac=self.MERGING_XYFAC,
@@ -562,7 +565,7 @@ class DiodeRun_V1(object):
         raise NotImplementedError("Diode TraceParticles is not yet implemented in mewarpx")
         print('### Init Diode TraceParticles ###')
         self.trace_species = diags.TraceSpecies(
-            numsteps=self.diag_steps-1, save_stride=2, write=True,
+            numsteps=self.DIAG_STEPS-1, save_stride=2, write=True,
             name='trace', begin_step=1, type=warp.Electron,
         )
         self.trace_species.sw = 0.
@@ -601,7 +604,7 @@ class DiodeRun_V1(object):
         raise NotImplementedError("Diode FluxDiag is not yet implemented in mewarpx")
         print('### Init Diode FluxDiag ###')
         self.fluxdiag = diags.FluxDiag(
-            diag_steps=self.diag_steps,
+            diag_steps=self.DIAG_STEPS,
             scraper=self.scraper,
             runinfo=self.runinfo,
             check_charge_conservation=self.CHECK_CHARGE_CONSERVATION,
@@ -614,13 +617,21 @@ class DiodeRun_V1(object):
         # yet.
         print('### Init Diode ResultsInfo ###')
         self.runresults = resultsinfo.ResultsInfo(
-            fluxdiag=self.fluxdiag, diag_steps=self.diag_steps,
+            fluxdiag=self.fluxdiag, diag_steps=self.DIAG_STEPS,
             noninterac=self.NONINTERAC, profile_diag=self.PROFILE_DIAG
         )
         self.runresults.setup_terminate(
             J_tolerance=self.J_TOLERANCE,
             J_total_tolerance=self.J_TOTAL_TOLERANCE,
-            total_timesteps=self.total_timesteps,
+            total_timesteps=self.TOTAL_TIMESTEPS,
             chargemon=None,
             P_cutoff=self.P_CUTOFF
         )
+
+    def init_warpx(self):
+        sim = picmi.Simulation(
+                    solver = self.solver,
+                    time_step_size = self.DT,
+                    max_steps = self.TOTAL_TIMESTEPS)
+
+        mwxrun.init_run(simulation=sim)
