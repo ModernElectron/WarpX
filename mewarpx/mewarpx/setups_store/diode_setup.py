@@ -4,6 +4,7 @@ defaults available.
 import sys
 
 import numpy as np
+from pywarpx import picmi
 
 # [[[TODO]]] These imports should mostly be removed, but if they can be changed
 # to current functionality that would be great.
@@ -252,44 +253,6 @@ class DiodeRun_V1(object):
         init_restart_util.init_run()
 
         #######################################################################
-        # Set geometry and boundary conditions                                #
-        #######################################################################
-
-        # Solver geometry
-        if self.dim == 1:
-            # Translational symmetry in x & y direction, 1D Poisson solver
-            warp.w3d.solvergeom = warp.w3d.Zgeom
-        elif self.dim == 2 and not self.rz:
-            # Translational symmetry in y direction, 2D Poisson solver
-            warp.w3d.solvergeom = warp.w3d.XZgeom
-        elif self.rz:
-            # 2D Poisson solver by using RZ for charge density & Poisson solver
-            warp.w3d.solvergeom = warp.w3d.RZgeom
-        elif self.dim == 3:
-            # Fully 3D solver
-            warp.w3d.solvergeom = warp.w3d.XYZgeom
-
-        # Longitudinal conditions overriden by conducting plates
-        warp.w3d.bound0 = warp.neumann
-        warp.w3d.boundnz = warp.neumann
-        warp.w3d.boundxy = warp.periodic
-        # Particles boundary conditions
-        warp.top.pbound0 = warp.absorb
-        warp.top.pboundnz = warp.absorb
-
-        if self.rz:
-            warp.top.prwall = self.PERIOD/2.0
-        else:
-            warp.top.pboundxy = warp.periodic
-
-        if self.dim < 3 and not self.rz:
-            # Disable evolution of y for Z & XZ runs.
-            warp.w3d.lpushy = False
-        if self.dim == 1:
-            # Disable evolution of x for 1D runs.
-            warp.w3d.lpushx = False
-
-        #######################################################################
         # Run dimensions                                                      #
         #######################################################################
 
@@ -299,35 +262,72 @@ class DiodeRun_V1(object):
             # immediately sets xmmin and ymmin to 0 when
             # warp.w3d.initdecompositionw3d() is called, so we work with that
             # offset here, though nothing should depend on it.
-            warp.w3d.xmmin = 0
-            warp.w3d.xmmax = 1.0
+            xmmin = 0
+            xmmax = 1.0
         else:
-            warp.w3d.xmmin = -self.PERIOD/2.0
-            warp.w3d.xmmax = self.PERIOD/2.0
+            xmmin = -self.PERIOD/2.0
+            xmmax = self.PERIOD/2.0
 
         if self.dim < 3 and not self.rz:
-            warp.w3d.ymmin = 0
-            warp.w3d.ymmax = 1.0
+            ymmin = 0
+            ymmax = 1.0
         else:
-            warp.w3d.ymmin = -self.PERIOD/2.0
-            warp.w3d.ymmax = self.PERIOD/2.0
+            ymmin = -self.PERIOD/2.0
+            ymmax = self.PERIOD/2.0
 
-        warp.w3d.zmmin = -self.OFFSET
-        warp.w3d.zmmax = self.D_CA + self.OFFSET
+        zmmin = -self.OFFSET
+        zmmax = self.D_CA + self.OFFSET
 
         # Grid parameters - set grid counts
         if self.dim == 1:
-            warp.w3d.nx = 0
+            nx = 0
         else:
-            warp.w3d.nx = int(round(self.PERIOD/self.RES_LENGTH))
+            nx = int(round(self.PERIOD/self.RES_LENGTH))
 
         if self.dim < 3 and not self.rz:
-            warp.w3d.ny = 0
+            ny = 0
         else:
-            warp.w3d.ny = int(round(self.PERIOD/self.RES_LENGTH))
+            ny = int(round(self.PERIOD/self.RES_LENGTH))
 
-        warp.w3d.nz = int(round((warp.w3d.zmmax - warp.w3d.zmmin)
-                                / self.RES_LENGTH))
+        nz = int(round((zmmax - zmmin)/self.RES_LENGTH))
+
+        # create the grid
+        if self.dim == 1:
+            raise NotImplementedError("Not yet implemented in mewarpx")
+        elif self.dim == 2:
+            self.grid = picmi.Cartesian2DGrid(
+                            number_of_cells=[nx, nz],
+                            lower_bound=[xmmin, zmmin],
+                            upper_bound=[xmmax, zmmax],
+                            bc_xmin='periodic',
+                            bc_xmax='periodic',
+                            bc_zmin='dirichlet',
+                            bc_zmax='dirichlet',
+                            warpx_potential_hi_x=self.V_ANODE,
+                            warpx_potential_low_x=self.V_CATHODE,
+                            lower_boundary_conditions_particles=['periodic', 'absorbing'],
+                            upper_boundary_conditions_particles=['periodic', 'absorbing'],
+                            moving_window_velocity=None,
+                            warpx_max_grid_size=nx//4
+                            )
+        elif self.dim == 3:
+            self.grid = picmi.Cartesian3DGrid(
+                            number_of_cells=[nx, ny, nz],
+                            lower_bound=[xmmin, ymmin, zmmin],
+                            upper_bound=[xmmax, ymmax, zmmax],
+                            bc_xmin='periodic',
+                            bc_xmax='periodic',
+                            bc_ymin='periodic',
+                            bc_ymin='periodic',
+                            bc_zmin='dirichlet',
+                            bc_zmax='dirichlet',
+                            warpx_potential_hi_x=self.V_ANODE,
+                            warpx_potential_lo_x=self.V_CATHODE,
+                            lower_boundary_conditions_particles=['absorbing', 'periodic', 'absorbing'],
+                            upper_boundary_conditions_particles=['absorbing', 'periodic', 'absorbing'],
+                            moving_window_velocity=None,
+                            warpx_max_grid_size=nx//4
+                            )
 
         #######################################################################
         # Run setup calculations and print diagnostic info                    #
