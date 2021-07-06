@@ -7,8 +7,6 @@ import os
 import numpy as np
 import minerva.util as minutil
 
-from mewarpx import emission
-
 from pywarpx import geometry
 
 # Pass comm_world to sim.step(<steps>, <comm_world>) to send comm_world to amrex

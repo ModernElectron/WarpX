@@ -1,15 +1,15 @@
-from examples.capacitive_discharge import N_INERT, PLASMA_DENSITY, TOTAL_TIME, T_ELEC
+from mewarpx import util as mwxutil
+mwxutil.init_libwarpx(ndim=2, rz=False)
+
+
 import numpy as np
 
 from minerva import util as minutil
-from numpy.core.numeric import cross
 
 from pywarpx import picmi
 
-from mewarpx import util as mwxutil
-mwxutil.init_lib_warpx(ndim=2, rz=False)
-
 from mewarpx import assemblies, emission, mepicmi
+
 from mewarpx.mwxrun import mwxrun
 from mewarpx.diags_store import diag_base
 
@@ -66,8 +66,8 @@ print('  Diag time = %.3e s (%i timesteps)' % (DIAG_INTERVAL, diag_steps))
 # physics components
 ################################
 
-v_rms_elec = np.sqrt(minutil.kb_J * T_ELEC / minutil.m_e)
-v_rms_ion = np.sqrt(minutil.kb_J * T_INERT / M_ION)
+v_rms_elec = np.sqrt(constants.kb * T_ELEC / constants.m_e)
+v_rms_ion = np.sqrt(constants.kb * T_INERT / M_ION)
 
 uniform_plasma_elec = picmi.UniformDistribution(
     density=PLASMA_DENSITY,
@@ -83,15 +83,15 @@ uniform_plasma_ion = picmi.UniformDistribution(
     directed_velocity=[0.] * 3
 )
 
-electrons = mepicmi.Species(
+electrons = picmi.Species(
     particle_type='electron', name='electrons',
     initial_distribution=uniform_plasma_elec
 )
 
-ions = mepicmi.Species(
+ions = picmi.Species(
     particle_type='He', name='he_ions',
     charge='q_e',
-    initial_distribution=uniform_plasma_elec
+    initial_distribution=uniform_plasma_ion
 )
 
 # MCC collisions
@@ -149,8 +149,6 @@ grid = picmi.Cartesian2DGrid(
     bc_xmax='periodic',
     bc_ymin='dirichlet',
     bc_ymax='dirichlet',
-    potential_ymin=0.0,
-    potential_ymax='450.0*sin(2*pi*%.5e*t)' % FREQ,
     bc_xmin_particles='periodic',
     bc_xmax_particles='periodic',
     bc_ymin_particles='absorbing',
@@ -158,9 +156,11 @@ grid = picmi.Cartesian2DGrid(
     moving_window_velocity=None,
     warpx_max_grid_size=128
 )
+grid.potential_ymin = 0.0
+grid.potential_ymax = '450.0*sin(2*pi*%.5e*t)' % FREQ
 
 solver = picmi.ElectrostaticSolver(
-    grid=grid, method='Multigrid', required_precision=1.e6
+    grid=grid, method='Multigrid', required_precision=1e-6
 )
 
 #####################################
@@ -173,9 +173,9 @@ field_diag = picmi.FieldDiagnostic(
     period=diagnostic_intervals,
     data_list=['rho_electrons', 'rho_he_ions', 'phi'],
     write_dir='.',
-    # warpx_file_prefix = 'diags',
-    warpx_format='openpmd',
-    warpx_openpmd_backend='h5'
+    warpx_file_prefix = 'diags',
+    #warpx_format='openpmd',
+    #warpx_openpmd_backend='h5'
 )
 
 #####################################
@@ -186,7 +186,7 @@ sim = picmi.Simulation(
     solver=solver,
     time_step_size=DT,
     max_steps=max_steps,
-    verbose=0
+    warpx_collisions=[mcc_electrons, mcc_ions]
 )
 
 sim.add_species(
@@ -203,11 +203,11 @@ sim.add_species(
     )
 )
 
-print(sim.add_diagnostic(field_diag))
+sim.add_diagnostic(field_diag)
 
-#####################################
+##################################
 # WarpX and mewarpx initialization
-#####################################
+##################################
 
 mwxrun.init_run(simulation=sim)
 
@@ -226,3 +226,16 @@ injector = emission.ThermionicInjector(emitter=emitter, species=electrons,
 injector_2 = emission.FixedNumberInjector(emitter=emitter, species=ions,
                                         injectfreq=50,
                                         npart=100000, weight=1e4)
+
+
+###############################
+# Add ME diagnostic
+###############################
+
+diag_base.TextDiag(diag_steps=1, preset_string='perfdebug')
+
+###############################
+# Simulation run
+###############################
+
+sim.step(10)
