@@ -124,6 +124,10 @@ class DiodeRun_V1(object):
     CFL_FACTOR = 0.4
     # RES_LENGTH is the cell size in meters
     RES_LENGTH = 0.8e-06
+    # MAX_GRID_SIZE_FACTOR is the factor by which nz (the number of cells
+    # in the z-direction) is reduced to obtain the max grid size parameter
+    # for Cartesian grids.
+    MAX_GRID_SIZE_FACTOR = 4
     # Check Debye Length allows disabling this check to run with large
     # resolutions
     CHECK_DEBYE_LENGTH = True
@@ -308,7 +312,7 @@ class DiodeRun_V1(object):
                             lower_boundary_conditions_particles=['periodic', 'absorbing'],
                             upper_boundary_conditions_particles=['periodic', 'absorbing'],
                             moving_window_velocity=None,
-                            warpx_max_grid_size=nx//4
+                            warpx_max_grid_size=nz//self.MAX_GRID_SIZE_FACTOR
                             )
         elif self.dim == 3:
             self.grid = picmi.Cartesian3DGrid(
@@ -323,10 +327,10 @@ class DiodeRun_V1(object):
                             bc_zmax='dirichlet',
                             warpx_potential_hi_x=self.V_ANODE,
                             warpx_potential_lo_x=self.V_CATHODE,
-                            lower_boundary_conditions_particles=['absorbing', 'periodic', 'absorbing'],
-                            upper_boundary_conditions_particles=['absorbing', 'periodic', 'absorbing'],
+                            lower_boundary_conditions_particles=['periodic', 'periodic', 'absorbing'],
+                            upper_boundary_conditions_particles=['periodic', 'periodic', 'absorbing'],
                             moving_window_velocity=None,
-                            warpx_max_grid_size=nx//4
+                            warpx_max_grid_size=nz//self.MAX_GRID_SIZE_FACTOR
                             )
 
         #######################################################################
