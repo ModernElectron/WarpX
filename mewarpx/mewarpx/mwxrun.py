@@ -213,8 +213,17 @@ class MEWarpXRun(object):
         """
         return _libwarpx.get_gathered_phi_fp(self.lev)
 
-    def set_phi_grid(self, phi):
-        phi_fp = _libwarpx.get_mesh_phi_fp(self.lev)
-        phi_fp[0][:] = phi
+    def set_phi_grid(self, phi_data):
+        """Sets phi segments on the grid to input phi data"""
+        # only proc 0 has the gathered phi grid so only it should set
+        # the phi grid
+        if self.me == 0:
+            # get phi multifab from warpx
+            phi_ptr = _libwarpx.get_pointer_full_phi_fp(self.lev)
+            try:
+                phi_ptr[0][:] = phi_data
+            except ValueError:
+                raise SystemExit("The phi data must be the same shape as the phi multifab")
+        _libwarpx.set_phi_grid_fp(self.lev)
 
 mwxrun = MEWarpXRun()

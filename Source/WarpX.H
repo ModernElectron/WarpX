@@ -246,6 +246,7 @@ public:
     amrex::MultiFab * get_pointer_F_fp  (int lev) const { return F_fp[lev].get(); }
     amrex::MultiFab * get_pointer_G_fp  (int lev) const { return G_fp[lev].get(); }
     amrex::MultiFab * get_pointer_phi_fp  (int lev) const { return phi_fp[lev].get(); }
+    amrex::MultiFab * get_pointer_full_phi_fp (int lev) const {return full_phi_fp[lev].get();}
 
     amrex::MultiFab * get_pointer_Efield_cp  (int lev, int direction) const { return Efield_cp[lev][direction].get(); }
     amrex::MultiFab * get_pointer_Bfield_cp  (int lev, int direction) const { return Bfield_cp[lev][direction].get(); }
@@ -284,12 +285,18 @@ public:
     }
 
     const amrex::MultiFab& getGatheredPhi_fp (int lev) {
-
         // copy data from the MultiFab with distributed Boxes to the new one
         // with the single Box
-        (*full_phi_fp[lev]).ParallelCopy(getphi_fp(lev));
+        amrex::MultiFab* phi_mf = get_pointer_full_phi_fp(lev);
+        (*phi_mf).ParallelCopy(*get_pointer_phi_fp(lev));
 
-        return *full_phi_fp[lev];
+        return *phi_mf;
+    }
+
+    void setPhiGrid_fp (int lev) {
+        // copy data from single box multifab into multifab with distributed boxes
+        (*get_pointer_phi_fp(lev)).ParallelCopy(*full_phi_fp[lev]);
+        return;
     }
 
     bool DoPML () const {return do_pml;}
