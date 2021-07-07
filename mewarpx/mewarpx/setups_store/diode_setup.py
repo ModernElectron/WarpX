@@ -10,13 +10,6 @@ from pywarpx import picmi
 from mewarpx.mwxrun import mwxrun
 from mewarpx.sim_control import SimControl
 
-# [[[TODO]]] These imports should mostly be removed, but if they can be changed
-# to current functionality that would be great.
-from metools import diags, emission, gentools
-from metools import init_restart_util, mcc, merging
-from metools import particlescraper1d, poisson1d, reflection, resultsinfo
-from metools import runinfo, runtools, util, warputil
-from metools.warputil import e
 
 
 class DiodeRun_V1(object):
@@ -372,7 +365,7 @@ class DiodeRun_V1(object):
         if self.dim == 1:
             raise NotImplementedError("1D solving is not yet implemented in mewarpx")
             self.solver = poisson1d.PoissonSolver1D()
-        elif self.dim == 2 or self.dim == 3:
+        elif self.dim in [2, 3]:
             self.solver = picmi.ElectrostaticSolver(
                 grid=self.grid,
                 method='Multigrid',
