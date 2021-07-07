@@ -206,6 +206,5 @@ class MEWarpXRun(object):
             except ValueError:
                 raise SystemExit("The phi data must be the same shape as the phi multifab")
         _libwarpx.set_phi_grid_fp(self.lev)
-        return
 
 mwxrun = MEWarpXRun()

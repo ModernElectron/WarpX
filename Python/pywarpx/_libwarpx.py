@@ -1199,7 +1199,6 @@ def get_gathered_phi_fp(level):
 def set_phi_grid_fp(level):
     """This writes new phi data to warpx"""
     libwarpx.warpx_setPhiGridFP(level)
-    return
 
 def get_pointer_full_phi_fp(level):
     """This returns the full phi grid multifab from warpx"""
