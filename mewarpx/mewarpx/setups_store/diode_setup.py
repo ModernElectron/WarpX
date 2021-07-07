@@ -277,19 +277,26 @@ class DiodeRun_V1(object):
         zmmax = self.D_CA + self.OFFSET
 
         # Grid parameters - set grid counts
-        if self.NX is None:
-            if self.dim == 1:
-                self.NX = 0
-            else:
-                self.NX = int(round(self.PERIOD/self.RES_LENGTH))
-        if self.NY is None:
-            if self.dim < 3 and not self.rz:
-                self.NY = 0
-            else:
-                self.NY = int(round(self.PERIOD/self.RES_LENGTH))
 
-        if self.NZ is None:
-            self.NZ = int(round((zmmax - zmmin)/self.RES_LENGTH))
+        # if NX, NY, and NZ were all passed in
+        # recalculate RES_LENGTH
+        # otherwise calculate NX, NY, and NZ
+        if not (None in [self.NX, self.NY, self.NZ]):
+            self.RES_LENGTH = (zmmax-zmmin)/self.NZ
+        else:
+            if self.NX is None:
+                if self.dim == 1:
+                    self.NX = 0
+                else:
+                    self.NX = int(round(self.PERIOD/self.RES_LENGTH))
+            if self.NY is None:
+                if self.dim < 3 and not self.rz:
+                    self.NY = 0
+                else:
+                    self.NY = int(round(self.PERIOD/self.RES_LENGTH))
+
+            if self.NZ is None:
+                self.NZ = int(round((zmmax - zmmin)/self.RES_LENGTH))
 
         # create the grid
         if self.dim == 1:
