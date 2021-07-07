@@ -159,6 +159,12 @@ class DiodeRun_V1(object):
     MERGING_DXFAC = 1.
     # MERGING_XYFAC controls XY binning vs Z binning
     MERGING_XYFAC = 10.
+    # number of cells in the x direction
+    NX = None
+    # number of cells in the y direction
+    NY = None
+    # number of cells in the z direction
+    NZ = None
 
     # Number of trace particles injected
     NTRACE = 400
@@ -244,12 +250,6 @@ class DiodeRun_V1(object):
 
     def init_base(self):
         print('### Init Diode Base Setup ###')
-
-        #######################################################################
-        # Set up diags directory and clean old files                          #
-        #######################################################################
-        init_restart_util.init_run()
-
         #######################################################################
         # Run dimensions                                                      #
         #######################################################################
@@ -277,24 +277,26 @@ class DiodeRun_V1(object):
         zmmax = self.D_CA + self.OFFSET
 
         # Grid parameters - set grid counts
-        if self.dim == 1:
-            nx = 0
-        else:
-            nx = int(round(self.PERIOD/self.RES_LENGTH))
+        if self.NX is None:
+            if self.dim == 1:
+                self.NX = 0
+            else:
+                self.NX = int(round(self.PERIOD/self.RES_LENGTH))
+        if self.NY is None:
+            if self.dim < 3 and not self.rz:
+                self.NY = 0
+            else:
+                self.NY = int(round(self.PERIOD/self.RES_LENGTH))
 
-        if self.dim < 3 and not self.rz:
-            ny = 0
-        else:
-            ny = int(round(self.PERIOD/self.RES_LENGTH))
-
-        nz = int(round((zmmax - zmmin)/self.RES_LENGTH))
+        if self.NZ is None:
+            self.NZ = int(round((zmmax - zmmin)/self.RES_LENGTH))
 
         # create the grid
         if self.dim == 1:
             raise NotImplementedError("1D grid is not yet implemented in mewarpx")
         elif self.dim == 2:
             self.grid = picmi.Cartesian2DGrid(
-                            number_of_cells=[nx, nz],
+                            number_of_cells=[self.NX, self.NZ],
                             lower_bound=[xmmin, zmmin],
                             upper_bound=[xmmax, zmmax],
                             bc_xmin='periodic',
@@ -306,17 +308,17 @@ class DiodeRun_V1(object):
                             lower_boundary_conditions_particles=['periodic', 'absorbing'],
                             upper_boundary_conditions_particles=['periodic', 'absorbing'],
                             moving_window_velocity=None,
-                            warpx_max_grid_size=nz//self.MAX_GRID_SIZE_FACTOR
+                            warpx_max_grid_size=self.NZ//self.MAX_GRID_SIZE_FACTOR
                             )
         elif self.dim == 3:
             self.grid = picmi.Cartesian3DGrid(
-                            number_of_cells=[nx, ny, nz],
+                            number_of_cells=[self.NX, self.NY, self.NZ],
                             lower_bound=[xmmin, ymmin, zmmin],
                             upper_bound=[xmmax, ymmax, zmmax],
                             bc_xmin='periodic',
                             bc_xmax='periodic',
                             bc_ymin='periodic',
-                            bc_ymin='periodic',
+                            bc_ymax='periodic',
                             bc_zmin='dirichlet',
                             bc_zmax='dirichlet',
                             warpx_potential_hi_x=self.V_ANODE,
@@ -324,7 +326,7 @@ class DiodeRun_V1(object):
                             lower_boundary_conditions_particles=['periodic', 'periodic', 'absorbing'],
                             upper_boundary_conditions_particles=['periodic', 'periodic', 'absorbing'],
                             moving_window_velocity=None,
-                            warpx_max_grid_size=nz//self.MAX_GRID_SIZE_FACTOR
+                            warpx_max_grid_size=self.NZ//self.MAX_GRID_SIZE_FACTOR
                             )
 
         #######################################################################
@@ -619,10 +621,25 @@ class DiodeRun_V1(object):
         # )
         self.control = SimControl(max_steps=self.TOTAL_TIMESTEPS)
 
-    def init_warpx(self):
-        sim = picmi.Simulation(
+    def init_simulation(self, **kw):
+        warpx_collisions = kw.pop('warpx_collisions')
+        self.sim = picmi.Simulation(
                     solver = self.solver,
                     time_step_size = self.DT,
-                    max_steps = self.TOTAL_TIMESTEPS)
+                    max_steps = self.TOTAL_TIMESTEPS,
+                    warpx_collisions=warpx_collisions)
+        return self.sim
 
-        mwxrun.init_run(simulation=sim)
+    def init_warpx(self, **kw):
+        if self.sim is None:
+            self.sim = self.init_simulation(**kw)
+
+        mwxrun.init_run(simulation=self.sim)
+
+    def add_species_to_sim(self, species, particle_per_cell):
+        self.sim.add_species(
+            species=species,
+            layout = picmi.GriddedLayout(
+                n_macroparticle_per_cell=particle_per_cell, grid=self.grid
+            )
+        )
