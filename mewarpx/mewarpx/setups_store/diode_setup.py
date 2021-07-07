@@ -2,11 +2,13 @@
 defaults available.
 """
 import sys
+from mewarpx.sim_control import SimControl
 
 import numpy as np
 from pywarpx import picmi
 
 from mewarpx.mwxrun import mwxrun
+from mewarpx.sim_control import SimControl
 
 # [[[TODO]]] These imports should mostly be removed, but if they can be changed
 # to current functionality that would be great.
@@ -244,8 +246,6 @@ class DiodeRun_V1(object):
             self.init_fluxdiag()
         if init_resultsinfo:
             self.init_resultsinfo()
-        # [[[TODO]]] Probably change this to "init_warpx" both for the keyword,
-        # and call the correct mwxrun initialize function.
         if init_warpx:
             self.init_warpx()
 
@@ -613,17 +613,18 @@ class DiodeRun_V1(object):
         # for total timesteps - should go. Most of the rest not implemented
         # yet.
         print('### Init Diode ResultsInfo ###')
-        self.runresults = resultsinfo.ResultsInfo(
-            fluxdiag=self.fluxdiag, diag_steps=self.DIAG_STEPS,
-            noninterac=self.NONINTERAC, profile_diag=self.PROFILE_DIAG
-        )
-        self.runresults.setup_terminate(
-            J_tolerance=self.J_TOLERANCE,
-            J_total_tolerance=self.J_TOTAL_TOLERANCE,
-            total_timesteps=self.TOTAL_TIMESTEPS,
-            chargemon=None,
-            P_cutoff=self.P_CUTOFF
-        )
+        # self.runresults = resultsinfo.ResultsInfo(
+        #     fluxdiag=self.fluxdiag, diag_steps=self.DIAG_STEPS,
+        #     noninterac=self.NONINTERAC, profile_diag=self.PROFILE_DIAG
+        # )
+        # self.runresults.setup_terminate(
+        #     J_tolerance=self.J_TOLERANCE,
+        #     J_total_tolerance=self.J_TOTAL_TOLERANCE,
+        #     total_timesteps=self.TOTAL_TIMESTEPS,
+        #     chargemon=None,
+        #     P_cutoff=self.P_CUTOFF
+        # )
+        self.control = SimControl(max_steps=self.TOTAL_TIMESTEPS)
 
     def init_warpx(self):
         sim = picmi.Simulation(
