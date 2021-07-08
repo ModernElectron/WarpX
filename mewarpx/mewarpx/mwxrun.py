@@ -154,6 +154,10 @@ class MEWarpXRun(object):
         """Return the timestep."""
         return _libwarpx.libwarpx.warpx_getdt(self.lev)
 
+    def get_t(self):
+        """Return the simulation time."""
+        return (self.get_it() - 1.0) * self.get_dt()
+
     def get_npart(self):
         """Get total number of particles in simulation, across all processors.
         """
