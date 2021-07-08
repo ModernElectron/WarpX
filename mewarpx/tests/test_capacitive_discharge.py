@@ -2,8 +2,8 @@
 from __future__ import division
 
 from builtins import range
-# import os
-# import sys
+import os
+import sys
 
 import pytest
 import numpy as np
@@ -22,10 +22,7 @@ from pywarpx import picmi
 # from metools import analysis, diags
 # from metools import init_restart_util, runtools, util, warputil
 from mewarpx.setups_store import diode_setup
-
-
-constants = picmi.constants
-
+from mewarpx.mwxrun import mwxrun
 ##########################
 # physics parameters
 ##########################
@@ -35,8 +32,6 @@ T_INERT = 300.0 # K
 
 FREQ = 13.56e6 # MHz
 
-VOLTAGE = 450.0
-
 M_ION = 6.67e-27 # kg
 
 PLASMA_DENSITY = 2.56e14 # m^-3
@@ -45,8 +40,6 @@ T_ELEC = 30000.0 # K
 ##########################
 # numerics parameters
 ##########################
-
-number_per_cell_each_dim = [32, 16]
 
 DT = 1.0 / (400 * FREQ)
 
@@ -74,7 +67,7 @@ def test_run1D_alldiags(capsys, name):
     basename = "Run"
     # Include a random run number to allow parallel runs to not collide. Using
     # python randint prevents collisions due to numpy rseed below
-    #initialize_testingdir(name)
+    initialize_testingdir(name)
 
     # Initialize each run with consistent, randomly-chosen, rseed. Use a random
     # seed instead for initial dataframe generation.
@@ -84,6 +77,7 @@ def test_run1D_alldiags(capsys, name):
     # Histograms only work with 2D scraper at the moment so we test each
     # combination
     #use_2d_scraper = "2DScraper" in name
+    constants = picmi.constants
 
     v_rms_elec = np.sqrt(constants.kb * T_ELEC / constants.m_e)
     v_rms_ion = np.sqrt(constants.kb * T_INERT / M_ION)
@@ -106,6 +100,7 @@ def test_run1D_alldiags(capsys, name):
         particle_type='electron', name='electrons',
         initial_distribution=uniform_plasma_elec
     )
+
     ions = picmi.Species(
         particle_type='He', name='he_ions',
         charge='q_e',
@@ -186,7 +181,7 @@ def test_run1D_alldiags(capsys, name):
         DIAG_STEPS=int(DIAG_INTERVAL / DT),
         DIAG_INTERVAL=DIAG_INTERVAL,
         SPECIES=[electrons, ions],
-        NUMBER_PARTICLES_PER_CELL = number_per_cell_each_dim,
+        NUMBER_PARTICLES_PER_CELL = [32, 16],
         FIELD_DIAG_DATA_LIST=['rho_electrons', 'rho_he_ions', 'phi']
     )
     # besides resultsinfo none of these are implemented in mewarpx
@@ -309,51 +304,53 @@ def test_run1D_alldiags(capsys, name):
 
     # assert util.test_df_vs_ref(basename, df)
 
-# def initialize_testingdir(name):
-#     """Change into an appropriate directory for testing. This means placing it
-#     in util.temp_dir, and attaching "_XXXXXX", a random 6-digit integer, to the
-#     end of the path.
-#     Arguments:
-#         name (str): The base string used in the new directory.
-#     Returns:
-#         origwd, newdir (str, str): Original working directory, and current
-#         working directory.
-#     """
-#     wd = None
-#     if warp.me == 0:
-#         # Use standard python random here, in case numpy rseed is being
-#         # used that might fix this randint call.
-#         wd = os.path.join(util.temp_dir, name + "_{:06d}".format(
-#             np.random.randint(0, 1000000)))
+def initialize_testingdir(name):
+    """Change into an appropriate directory for testing. This means placing it
+    in util.temp_dir, and attaching "_XXXXXX", a random 6-digit integer, to the
+    end of the path.
+    Arguments:
+        name (str): The base string used in the new directory.
+    Returns:
+        origwd, newdir (str, str): Original working directory, and current
+        working directory.
+    """
+    wd = None
+    if mwxrun.me == 0:
+        # Use standard python random here, in case numpy rseed is being
+        # used that might fix this randint call.
+        wd = os.path.join('../tests/test_files', name + "_{:06d}".format(
+            np.random.randint(0, 1000000)))
 
-#     if warp.lparallel:
-#         wd = warp.mpibcast(wd)
+    #TODO: Use warpx functionality here instead.
+    if warp.lparallel:
+        wd = warp.mpibcast(wd)
 
-#     if wd is None:
-#         raise ValueError("Working directory not properly set or broadcast.")
+    if wd is None:
+        raise ValueError("Working directory not properly set or broadcast.")
 
-#     origwd = change_to_warpdir(wd)
+    origwd = change_to_warpdir(wd)
 
-#     return origwd, os.getcwd()
+    return origwd, os.getcwd()
 
-# def change_to_warpdir(wd):
-#     """Handle logic of moving to correct directory. The directory is created if
-#     needed.
-#     Arguments:
-#         wd (str): Path of desired working directory.
-#     Returns:
-#         origwd (str): Path of original working directory
-#     """
-#     origwd = os.getcwd()
+def change_to_warpdir(wd):
+    """Handle logic of moving to correct directory. The directory is created if
+    needed.
+    Arguments:
+        wd (str): Path of desired working directory.
+    Returns:
+        origwd (str): Path of original working directory
+    """
+    origwd = os.getcwd()
 
-#     if mewarpx.me == 0:
-#         minutil.mkdir_p(wd)
+    if mwxrun.me == 0:
+        minutil.mkdir_p(wd)
 
-#     warp.comm_world.Barrier()
+    #TODO: Use warpx functionality here for these Barrier() calls instead.
+    warp.comm_world.Barrier()
 
-#     os.chdir(wd)
-#     print("Change to working directory {}".format(os.getcwd()))
+    os.chdir(wd)
+    print("Change to working directory {}".format(os.getcwd()))
 
-#     warp.comm_world.Barrier()
+    warp.comm_world.Barrier()
 
-#     return origwd
+    return origwd
