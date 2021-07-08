@@ -195,7 +195,9 @@ class MEWarpXRun(object):
 
         Returns:
             A list with only 1 element - a numpy array with rho on the full
-            domain.
+            domain. In place of the numpy array, a reference to an unpopulated
+            multifab object is returned on processors other than root.
+
         """
         return _libwarpx.get_gathered_charge_density_fp(self.lev)
 
@@ -213,7 +215,8 @@ class MEWarpXRun(object):
 
         Returns:
             A list with only 1 element - a numpy array with phi on the full
-            domain.
+            domain. In place of the numpy array, a reference to an unpopulated
+            multifab object is returned on processors other than root.
         """
         return _libwarpx.get_gathered_phi_fp(self.lev)
 
@@ -226,8 +229,10 @@ class MEWarpXRun(object):
             phi_ptr = _libwarpx.get_pointer_full_phi_fp(self.lev)
             try:
                 phi_ptr[0][:] = phi_data
-            except ValueError:
-                raise SystemExit("The phi data must be the same shape as the phi multifab")
+            except ValueError as e:
+                if 'could not broadcast input array from shape' in str(e):
+                    print("Phi data must be the same shape as the phi multifab")
+                raise
         _libwarpx.set_phi_grid_fp(self.lev)
 
 mwxrun = MEWarpXRun()

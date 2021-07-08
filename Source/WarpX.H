@@ -276,7 +276,6 @@ public:
     const amrex::MultiFab& getBfield_avg_fp (int lev, int direction) {return *Bfield_avg_fp[lev][direction];}
 
     const amrex::MultiFab& getGatheredRho_fp (int lev) {
-
         // copy data from the MultiFab with distributed Boxes to the new one
         // with the single Box
         (*full_rho_fp[lev]).ParallelCopy(getrho_fp(lev));

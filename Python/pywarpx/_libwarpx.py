@@ -1153,7 +1153,7 @@ def get_mesh_charge_density_fp(level, include_ghosts=True):
 def get_gathered_charge_density_fp(level):
     '''
 
-    This returns a single numpy arrays containing the mesh charge density
+    This returns a single numpy array containing the mesh charge density
     data on the grid gathered from all processes. This version returns
     the density on the fine patch for the given level.
 
@@ -1201,7 +1201,7 @@ def get_mesh_phi_fp(level, include_ghosts=True):
 def get_gathered_phi_fp(level):
     '''
 
-    This returns a single numpy arrays containing the mesh electrostatic
+    This returns a single numpy array containing the mesh electrostatic
     potential data on the grid gathered from all processes. This version returns
     the density on the fine patch for the given level.
 
