@@ -1,8 +1,9 @@
 import numpy as np
 from scipy.sparse import csc_matrix, linalg as sla
 
-from pywarpx import callbacks
 from mewarpx.mwxrun import mwxrun
+from pywarpx import callbacks
+from pywarpx.picmi import constants
 
 class PoissonSolverPseudo1D(object):
 
@@ -114,9 +115,9 @@ class PoissonSolverPseudo1D(object):
         left_voltage = self.left_voltage(mwxrun.get_t())
         right_voltage = self.right_voltage(mwxrun.get_t())
 
-        rho = self.rho_data[
+        rho = -self.rho_data[
             self.nxguardrho:-self.nxguardrho, self.nzguardrho:-self.nzguardrho
-        ]
+        ] / constants.ep0
 
         # Construct b vector
         nx, nz = np.shape(rho)
