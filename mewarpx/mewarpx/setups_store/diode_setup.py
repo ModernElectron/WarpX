@@ -78,6 +78,12 @@ class DiodeRun_V1(object):
     #   if using standard elastic reflection.
     LOW_E_LOSS_FRACTION = 0.
 
+    # Particle Species
+    # A list of particle species
+    SPECIES = None
+    # The number of particles per cell in each dimension as a list
+    NUMBER_PARTICLES_PER_CELL = None
+
     # ### INJECTION SETTINGS ###
     # Number of particles to inject TOTAL per timestep
     NPARTPERSTEP = 10
@@ -149,6 +155,10 @@ class DiodeRun_V1(object):
     CHECK_CHARGE_CONSERVATION = True
     # Get diagnostic information every DIAG_STEPS setps.
     DIAG_STEPS = None
+    # Time (in seconds) between diagnostic evaluations
+    DIAG_INTERVAL = None
+    # The data list for field diagnostics
+    FIELD_DIAG_DATA_LIST = None
     # The total timesteps of the simulation
     TOTAL_TIMESTEPS = None
     # MERGING_DV controls dv bin width
@@ -199,10 +209,16 @@ class DiodeRun_V1(object):
         self.V_CATHODE = -self.CATHODE_PHI
         self.V_ANODE = self.V_CATHODE + self.V_ANODE_CATHODE
 
+        print('Setting up simulation with')
+        print('  dt = %.3e s' % self.DT)
+        print('  Total time = %.3e s (%i timesteps)' % (self.TOTAL_TIMESTEPS * self.DT, self.TOTAL_TIMESTEPS))
+        print('  Diag time = %.3e s (%i timesteps)' % (self.DIAG_INTERVAL, self.DIAG_STEPS))
+
     def setup_run(
         self,
         init_base=True,
         init_solver=True,
+        init_simulation=True,
         init_conductors=True,
         init_scraper=True,
         init_injectors=True,
@@ -212,6 +228,7 @@ class DiodeRun_V1(object):
         init_traceparticles=False,
         init_runinfo=False,
         init_fluxdiag=False,
+        init_field_diag=False,
         init_resultsinfo=False,
         init_warpx=False
     ):
@@ -225,6 +242,8 @@ class DiodeRun_V1(object):
             self.init_base()
         if init_solver:
             self.init_solver()
+        if init_simulation:
+            self.init_simulation()
         if init_conductors:
             self.init_conductors()
         if init_scraper:
@@ -243,6 +262,8 @@ class DiodeRun_V1(object):
             self.init_runinfo()
         if init_fluxdiag:
             self.init_fluxdiag()
+        if init_field_diag:
+            self.init_field_diag()
         if init_resultsinfo:
             self.init_resultsinfo()
         if init_warpx:
@@ -610,6 +631,17 @@ class DiodeRun_V1(object):
             overwrite=False
         )
 
+    def init_field_diag(self):
+        print('### Init Diode FieldDiag ###')
+        self.field_diag = picmi.FieldDiagnostic(
+            name='diags',
+            grid=self.grid,
+            period=self.DIAG_INTERVAL,
+            data_list = self.FIELD_DIAG_DATA_LIST,
+            write_dir = 'diags/',
+        )
+        self.sim.add_diagnostic(self.field_diag)
+
     def init_resultsinfo(self):
         # [[[TODO]]] This is where the stopping criteria defaults - at least
         # for total timesteps - should go. Most of the rest not implemented
@@ -628,25 +660,25 @@ class DiodeRun_V1(object):
         # )
         self.control = SimControl(max_steps=self.TOTAL_TIMESTEPS)
 
-    def init_simulation(self, **kw):
-        warpx_collisions = kw.pop('warpx_collisions')
+    def init_simulation(self):
+        print('### Init Simulation Setup ###')
         self.sim = picmi.Simulation(
                     solver = self.solver,
                     time_step_size = self.DT,
-                    max_steps = self.TOTAL_TIMESTEPS,
-                    warpx_collisions=warpx_collisions)
-        return self.sim
+                    max_steps = self.TOTAL_TIMESTEPS)
 
-    def init_warpx(self, **kw):
-        if self.sim is None:
-            self.sim = self.init_simulation(**kw)
+        # Add particle species if any were defined
+        if self.SPECIES is not None:
+            if self.NUMBER_PARTICLES_PER_CELL is None:
+                raise ValueError("NUMBER_PARTICLES_PER_CELL cannot be None")
+            num_species = len(self.SPECIES)
+            for i in range(num_species):
+                self.sim.add_species(
+                    self.SPECIES[i],
+                    layout = picmi.GriddedLayout(
+                        n_macroparticle_per_cell = self.NUMBER_PARTICLES_PER_CELL, grid = self.grid
+                    )
+                )
 
+    def init_warpx(self):
         mwxrun.init_run(simulation=self.sim)
-
-    def add_species_to_sim(self, species, particle_per_cell):
-        self.sim.add_species(
-            species=species,
-            layout = picmi.GriddedLayout(
-                n_macroparticle_per_cell=particle_per_cell, grid=self.grid
-            )
-        )

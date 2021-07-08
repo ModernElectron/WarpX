@@ -1,5 +1,4 @@
 """Test full 1D diode run with diagnostics."""
-# [[[TODO]]] NOT TOUCHED, JUST COPIED FROM WARP, SO FAR
 from __future__ import division
 
 from builtins import range
@@ -31,8 +30,6 @@ constants = picmi.constants
 # physics parameters
 ##########################
 
-D_CA = 0.067 # m
-
 N_INERT = 9.64e20 # m^-3
 T_INERT = 300.0 # K
 
@@ -49,15 +46,6 @@ T_ELEC = 30000.0 # K
 # numerics parameters
 ##########################
 
-# --- Grid
-nx = 128
-nz = 16
-
-xmin = 0.0
-zmin = 0.0
-xmax = D_CA
-zmax = D_CA / nx * nz
-
 number_per_cell_each_dim = [32, 16]
 
 DT = 1.0 / (400 * FREQ)
@@ -68,25 +56,22 @@ TOTAL_TIME = 10.0 * DT # 1280 / FREQ
 DIAG_INTERVAL = 2.0 * DT # 32 / FREQ
 
 # --- Number of time steps
-max_steps = int(TOTAL_TIME / DT)
 diag_steps = int(DIAG_INTERVAL / DT)
 diagnostic_intervals = "::%i" % diag_steps #"%i:" % (max_steps - diag_steps + 1)
 
-print('Setting up simulation with')
-print('  dt = %.3e s' % DT)
-print('  Total time = %.3e s (%i timesteps)' % (TOTAL_TIME, max_steps))
-print('  Diag time = %.3e s (%i timesteps)' % (DIAG_INTERVAL, diag_steps))
 
 # mwxutil.init_libwarpx(ndim=2, rz=False)
 @pytest.mark.parametrize(
     ("name"),
     [
-        'Run1D_alldiags_2DScraper',
-        'Run1D_alldiags_1DScraper',
+        'Run1D',
+        'Run1D_RZ',
+        'Run2D'
+        'Run2D_RZ',
     ]
 )
 def test_run1D_alldiags(capsys, name):
-    basename = "Run1D_alldiags"
+    basename = "Run"
     # Include a random run number to allow parallel runs to not collide. Using
     # python randint prevents collisions due to numpy rseed below
     #initialize_testingdir(name)
@@ -98,7 +83,7 @@ def test_run1D_alldiags(capsys, name):
 
     # Histograms only work with 2D scraper at the moment so we test each
     # combination
-    use_2d_scraper = "2DScraper" in name
+    #use_2d_scraper = "2DScraper" in name
 
     v_rms_elec = np.sqrt(constants.kb * T_ELEC / constants.m_e)
     v_rms_ion = np.sqrt(constants.kb * T_INERT / M_ION)
@@ -181,41 +166,49 @@ def test_run1D_alldiags(capsys, name):
         ANODE_TEMP=400,
         ANODE_PHI=1.2,
         V_ANODE_CATHODE=1.21,
-        D_CA=D_CA,
+        D_CA=0.067,
         NPARTPERSTEP=200,
         TOTAL_CROSSINGS=2.0,
         DIAG_CROSSINGS=2.0,
         J_TOLERANCE=0.001,
         CFL_FACTOR=2.0,
         OFFSET=1e-06,
-        FORCE_2D_SCRAPER=use_2d_scraper,
         MERGING=True,
         MERGING_DV=100000,
         MERGING_PERPERIOD=20,
         MERGING_DXFAC=2,
         MERGING_XYFAC=10,
         CHECK_CHARGE_CONSERVATION=False,
-        NX=nx,
-        NZ=nz,
+        NX=128,
+        NZ=16,
         DT=DT,
-        TOTAL_TIMESTEPS=TOTAL_TIME
+        TOTAL_TIMESTEPS=int(TOTAL_TIME / DT),
+        DIAG_STEPS=int(DIAG_INTERVAL / DT),
+        DIAG_INTERVAL=DIAG_INTERVAL,
+        SPECIES=[electrons, ions],
+        NUMBER_PARTICLES_PER_CELL = number_per_cell_each_dim,
+        FIELD_DIAG_DATA_LIST=['rho_electrons', 'rho_he_ions', 'phi']
     )
     # besides resultsinfo none of these are implemented in mewarpx
     run.setup_run(
+        init_base=True,
+        init_solver=True,
+        init_simulation=True,
+        init_conductors=False,
+        init_scraper=False,
+        init_injectors=False,
         init_reflection=False,
+        init_inert_gas_ionization=False,
         init_merging=False,
         init_traceparticles=False,
         init_runinfo=False,
         init_fluxdiag=False,
-        init_resultsinfo=True
+        init_field_diag=True,
+        init_resultsinfo=True,
+        init_warpx=False
     )
 
-    sim = run.init_simulation(warpx_collisions=[mcc_electrons, mcc_ions])
-
-    run.add_species_to_sim(electrons, particle_per_cell=number_per_cell_each_dim)
-    run.add_species_to_sim(ions, particle_per_cell=number_per_cell_each_dim)
-
-    run.init_warpx(sim=sim)
+    run.init_warpx()
     # if use_2d_scraper:
     #     runtools.PHistDiag(
     #         quantity_spec=[
