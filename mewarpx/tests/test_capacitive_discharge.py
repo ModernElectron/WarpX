@@ -4,6 +4,7 @@ from __future__ import division
 from builtins import range
 import os
 import sys
+from picmistandard import base
 
 import pytest
 import numpy as np
@@ -19,8 +20,6 @@ from pywarpx import picmi
 # import warp
 # from warp.data_dumping.openpmd_diag import ParticleDiagnostic
 
-# from metools import analysis, diags
-# from metools import init_restart_util, runtools, util, warputil
 from mewarpx.setups_store import diode_setup
 from mewarpx.mwxrun import mwxrun
 ##########################
@@ -53,7 +52,7 @@ diag_steps = int(DIAG_INTERVAL / DT)
 diagnostic_intervals = "::%i" % diag_steps #"%i:" % (max_steps - diag_steps + 1)
 
 
-# mwxutil.init_libwarpx(ndim=2, rz=False)
+#mwxutil.init_libwarpx(ndim=2, rz=False)
 @pytest.mark.parametrize(
     ("name"),
     [
@@ -65,6 +64,8 @@ diagnostic_intervals = "::%i" % diag_steps #"%i:" % (max_steps - diag_steps + 1)
 )
 def test_run1D_alldiags(capsys, name):
     basename = "Run"
+    use_rz = 'RZ' in name
+    dim = int(name.replace(basename, '')[0])
     # Include a random run number to allow parallel runs to not collide. Using
     # python randint prevents collisions due to numpy rseed below
     initialize_testingdir(name)
@@ -155,6 +156,7 @@ def test_run1D_alldiags(capsys, name):
 
     # Specific numbers match older run for consistency
     run = diode_setup.DiodeRun_V1(
+        dim=dim, rz=use_rz,
         CATHODE_TEMP=1473.15,
         CATHODE_A=3.0e5,
         CATHODE_PHI=2.11,
@@ -203,106 +205,21 @@ def test_run1D_alldiags(capsys, name):
         init_warpx=False
     )
 
-    run.init_warpx()
-    # if use_2d_scraper:
-    #     runtools.PHistDiag(
-    #         quantity_spec=[
-    #             ('uxbirth', -run.setupinfo.vmax/4., run.setupinfo.vmax/4.),
-    #             ('uzbirth', 0, run.setupinfo.vmax/4.),
-    #         ],
-    #         scraper=run.scraper,
-    #         diag_steps=run.diag_steps,
-    #         linres=30,
-    #         jslist=0,
-    #     )
-
-    #     runtools.PHistDiag(
-    #         quantity_spec=[
-    #             ('zold', warp.w3d.zmmin, warp.w3d.zmmax),
-    #         ],
-    #         scraper=run.scraper,
-    #         diag_steps=run.diag_steps,
-    #         linres=50,
-    #         jslist=0,
-    #         name='particle_histogramcurrent'
-    #     )
-
-    # warputil.warp_generate()
-
-    # # Run the main WARP loop
-    # while not run.runresults.terminate_flag:
-    #     warp.step(run.diag_steps)
+    # Run the main WARP loop
+    while run.control.check_criteria():
+        run.sim.step()
 
     #######################################################################
     # Cleanup and final output                                            #
     #######################################################################
 
-    # run.runresults.finalize_save()
+    #TODO: what can be kept here between these two lines?
+    run.runresults.finalize_save()
+    out, _ = capsys.readouterr()
 
-    # out, _ = capsys.readouterr()
-
-    # filelist = [
-    #     "diags/fields/Barrier_index_0000000000.pdf",
-    #     "diags/fields/Barrier_index_0000000000.png",
-    #     "diags/fields/Barrier_index_0000000106.pdf",
-    #     "diags/fields/Barrier_index_0000000106.png",
-    #     "diags/fields/Electric_field_strength_0000000000.npy",
-    #     "diags/fields/Electric_field_strength_0000000000.pdf",
-    #     "diags/fields/Electric_field_strength_0000000000.png",
-    #     "diags/fields/Electric_field_strength_0000000106.npy",
-    #     "diags/fields/Electric_field_strength_0000000106.pdf",
-    #     "diags/fields/Electric_field_strength_0000000106.png",
-    #     "diags/fields/Electrostatic_potential_0000000000.npy",
-    #     "diags/fields/Electrostatic_potential_0000000000.pdf",
-    #     "diags/fields/Electrostatic_potential_0000000000.png",
-    #     "diags/fields/Electrostatic_potential_0000000106.npy",
-    #     "diags/fields/Electrostatic_potential_0000000106.pdf",
-    #     "diags/fields/Electrostatic_potential_0000000106.png",
-    #     "diags/fields/Net_charge_density_0000000000.npy",
-    #     "diags/fields/Net_charge_density_0000000106.npy",
-    #     "diags/fields/Net_charge_density_0000000106.pdf",
-    #     "diags/fields/Net_charge_density_0000000106.png",
-    #     "diags/traces/trace_0000000106.npz",
-    #     "diags/xzsolver/hdf5/data0000000106.h5",
-    #     "diags/fluxes/anode_plane_scraped.csv",
-    #     "diags/fluxes/cathode_scraped.csv",
-    #     "diags/results.dpkl",
-    #     "diags/results.txt",
-    #     "diags/runinfo.dpkl",
-    # ]
-
-    # if use_2d_scraper:
-    #     filelist += [
-    #         "diags/histograms/particle_histogram_0000000106.npy",
-    #         "diags/histograms/particle_histogramcurrent_0000000106.npy",
-    #         "diags/histograms/particle_histogramcurrent_setup.p",
-    #         "diags/histograms/particle_histogramcurrent_zold_0000000106.pdf",
-    #         "diags/histograms/particle_histogram_setup.p",
-    #         "diags/histograms/particle_histogram_uxbirth_0000000106.pdf",
-    #         "diags/histograms/particle_histogram_uxbirth_uzbirth_0000000106.pdf",
-    #         "diags/histograms/particle_histogram_uzbirth_0000000106.pdf",
-    #     ]
-
-    # print(out)
-    # assert "Step: 106; Diagnostic period: 1" in out
-
-    # for filename in filelist:
-    #     assert os.path.isfile(filename)
-
-    # myrun = analysis.RunProcess(".", use_minerva=False)
-    # myrun.print_analysis()
-    # outtext, _ = capsys.readouterr()
-    # print(outtext)
-
-    # # Gather results to check.  The index call here ensures there's one row to
-    # # assign into in the new DataFrame.
-    # rdict = myrun.get_analysis()
-    # df = pandas.DataFrame(index=list(range(1)))
-    # df['cathode_J_emit'] = rdict['cathode_all']['emit_J_full']
-    # df['cathode_J_abs'] = rdict['cathode_all']['abs_J_full']
-    # df['anode_J_abs'] = rdict['anode_all']['abs_J_full']
-
-    # assert util.test_df_vs_ref(basename, df)
+    print(out)
+    # make sure out isn't empty
+    assert out
 
 def initialize_testingdir(name):
     """Change into an appropriate directory for testing. This means placing it
