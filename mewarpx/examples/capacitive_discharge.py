@@ -1,5 +1,5 @@
 """
-Monte-Carlo Collision script benchmark against case 1 results from
+Monte-Carlo Collision script based on case 1 from
 Turner et al. (2013) - https://doi.org/10.1063/1.4775084
 """
 
@@ -7,17 +7,13 @@ from mewarpx import util as mwxutil
 mwxutil.init_libwarpx(ndim=2, rz=False)
 
 from mewarpx.mwxrun import mwxrun
+from mewarpx.poisson_pseudo_1d import PoissonSolverPseudo1D
 from mewarpx.diags_store import diag_base
 
 from pywarpx import picmi
 import pywarpx
-from pywarpx import callbacks
 
 import numpy as np
-import time
-
-import shutil
-import yt
 
 constants = picmi.constants
 
@@ -44,32 +40,31 @@ T_ELEC = 30000.0 # K
 ##########################
 
 # --- Grid
-nx = 128
-ny = 16
+nx = 8
+nz = 128
 
 xmin = 0.0
-ymin = 0.0
-xmax = D_CA
-ymax = D_CA / nx * ny
+zmin = 0.0
+xmax = D_CA / nz * nx
+zmax = D_CA
 
 number_per_cell_each_dim = [32, 16]
 
 DT = 1.0 / (400 * FREQ)
 
 # Total simulation time in seconds
-TOTAL_TIME = 10.0 * DT # 1280 / FREQ
+TOTAL_TIME = 500.0 * DT # 1280 / FREQ
 # Time (in seconds) between diagnostic evaluations
-DIAG_INTERVAL = 2.0 * DT # 32 / FREQ
+# DIAG_INTERVAL = 100.0 * DT # 32 / FREQ
 
 # --- Number of time steps
 max_steps = int(TOTAL_TIME / DT)
-diag_steps = int(DIAG_INTERVAL / DT)
-diagnostic_intervals = "::%i" % diag_steps #"%i:" % (max_steps - diag_steps + 1)
+diag_steps = 100
+diagnostic_intervals = "400::10"
 
 print('Setting up simulation with')
 print('  dt = %.3e s' % DT)
 print('  Total time = %.3e s (%i timesteps)' % (TOTAL_TIME, max_steps))
-print('  Diag time = %.3e s (%i timesteps)' % (DIAG_INTERVAL, diag_steps))
 
 ##########################
 # physics components
@@ -153,22 +148,20 @@ mcc_ions = picmi.MCCCollisions(
 ##########################
 
 grid = picmi.Cartesian2DGrid(
-    number_of_cells = [nx, ny],
-    lower_bound = [xmin, ymin],
-    upper_bound = [xmax, ymax],
-    bc_xmin = 'dirichlet',
-    bc_xmax = 'dirichlet',
-    bc_ymin = 'periodic',
-    bc_ymax = 'periodic',
-    warpx_potential_hi_x = "%.1f*sin(2*pi*%.5e*t)" % (VOLTAGE, FREQ),
-    lower_boundary_conditions_particles=['absorbing', 'periodic'],
-    upper_boundary_conditions_particles=['absorbing', 'periodic'],
+    number_of_cells = [nx, nz],
+    lower_bound = [xmin, zmin],
+    upper_bound = [xmax, zmax],
+    lower_boundary_conditions=['periodic', 'dirichlet'],
+    upper_boundary_conditions=['periodic', 'dirichlet'],
+    lower_boundary_conditions_particles=['periodic', 'absorbing'],
+    upper_boundary_conditions_particles=['periodic', 'absorbing'],
+    # warpx_potential_hi_z = "%.1f*sin(2*pi*%.5e*t)" % (VOLTAGE, FREQ),
     moving_window_velocity = None,
-    warpx_max_grid_size = nx//4
+    warpx_max_grid_size = nz//4
 )
 
 solver = picmi.ElectrostaticSolver(
-    grid=grid, method='Multigrid', required_precision=1e-6
+    grid=grid, method='Multigrid', required_precision=1e-12
 )
 
 ##########################
@@ -181,20 +174,8 @@ field_diag = picmi.FieldDiagnostic(
     period = diagnostic_intervals,
     data_list = ['rho_electrons', 'rho_he_ions', 'phi'],
     write_dir = 'diags/',
-    # warpx_file_prefix = 'diags',
-    #warpx_format = 'openpmd',
-    #warpx_openpmd_backend='h5'
 )
-'''
-restart_dumps = picmi.FieldDiagnostic(
-    name = 'checkpoints',
-    warpx_format = 'checkpoint',
-    grid = grid,
-    period = diagnostic_intervals//2,
-    write_dir = './restarts',
-    # warpx_file_prefix = 'diags',
-)
-'''
+
 ##########################
 # simulation setup
 ##########################
@@ -203,7 +184,8 @@ sim = picmi.Simulation(
     solver = solver,
     time_step_size = DT,
     max_steps = max_steps,
-    warpx_collisions=[mcc_electrons, mcc_ions]
+    warpx_collisions=[mcc_electrons, mcc_ions],
+    verbose=0
 )
 
 sim.add_species(
@@ -228,10 +210,13 @@ sim.add_diagnostic(field_diag)
 
 mwxrun.init_run(simulation=sim)
 
-print('Set up simulation with')
-print('  dt = %.3e s' % DT)
-print('  Total time = %.3e s (%i timesteps)' % (TOTAL_TIME, max_steps))
-print('  Diag time = %.3e s (%i timesteps)' % (DIAG_INTERVAL, diag_steps))
+##########################
+# Add direct solver
+##########################
+
+anode_voltage = lambda t: VOLTAGE * np.sin(2.0 * np.pi * FREQ * t)
+# comment line below to use the multigrid solver
+my_solver = PoissonSolverPseudo1D(right_voltage=anode_voltage)
 
 ##########################
 # Add ME diagnostic
@@ -243,43 +228,33 @@ diag_base.TextDiag(diag_steps=diag_steps, preset_string='perfdebug')
 # simulation run
 ##########################
 
-import matplotlib.pyplot as plt
+sim.step()
 
-#my_solver = PoissonSolverPseudo1D(nx, ny, D_CA / nx)
+##########################
+# collect diagnostics
+##########################
 
-def direct_solve():
-    rho_data = mwxrun.get_rho_grid()[0]
-    rho = rho_data[:,:,0].T
-    phi = my_solver.solve(rho,
-        VOLTAGE * np.sin(2.0*np.pi*FREQ* (mwxrun.get_it()-1.0)*mwxrun.get_dt())
-    )
-    mwxrun.set_phi_grid(phi)
-
-def plot_phi():
-    phi_data = mwxrun.get_gathered_phi_grid()
-    # phi_data = mwxrun.get_phi_grid()
-    if mwxrun.me == 0:
-        print(phi_data)
-        phi_data = phi_data[0]
-        print(mwxrun.me, phi_data.shape)
-        plt.plot(np.mean(phi_data[1:-1], axis=1), 'o-')
-    # plt.plot(phi_data[:,4], 'o-')
-    # plt.plot(phi[:,4], 'o-')
-
-# comment line below to use the multigrid solver
-# callbacks.installfieldsolver(direct_solve)
-
-callbacks.installafterstep(plot_phi)
-
-sim.step(5)
 if mwxrun.me == 0:
-    plt.ylim(-2, 28)
-    plt.xlabel('Cell number')
-    plt.ylabel('$\phi$ (eV)')
-    plt.title(
-        'Electrostatic potential at different times gathered\n'
-        'to the root proc from a 2 proc simulation'
-    )
-    plt.grid()
-    plt.savefig('gathered_phi.png')
-    plt.show()
+    import glob
+    import yt
+
+    data_dirs = glob.glob('diags/diags*')
+
+    for ii, data in enumerate(data_dirs):
+
+        datafolder = data
+        print('Reading ', datafolder, '\n')
+        ds = yt.load( datafolder )
+        grid_data = ds.covering_grid(
+            level=0, left_edge=ds.domain_left_edge, dims=ds.domain_dimensions
+        )
+        if ii == 0:
+            rho_data = np.mean(
+                grid_data['rho_he_ions'].to_ndarray()[:,:,0], axis=0
+            ) / constants.q_e
+        else:
+            rho_data += np.mean(
+                grid_data['rho_he_ions'].to_ndarray()[:,:,0], axis=0
+            ) / constants.q_e
+    rho_data /= (ii + 1)
+    np.save('direct_solver_avg_rho_data.npy', rho_data)

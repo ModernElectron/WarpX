@@ -21,10 +21,8 @@ class PoissonSolverPseudo1D(object):
         if not np.isclose(mwxrun.dx, mwxrun.dz):
             raise RuntimeError('Direct solver requires dx = dz.')
 
-        # for historical reasons (copying from metools) the direct solver
-        # uses the transpose of the domain
-        self.nz = mwxrun.nx
-        self.nx = mwxrun.nz
+        self.nx = mwxrun.nx
+        self.nz = mwxrun.nz
         self.dx = mwxrun.dz
 
         self.nxguardrho = 2
@@ -103,10 +101,10 @@ class PoissonSolverPseudo1D(object):
         self.rho_data = mwxrun.get_gathered_rho_grid()
         # run superLU solver only on the root processor
         if mwxrun.me == 0:
-            self.rho_data = self.rho_data[0][:,:,0].T
+            self.rho_data = self.rho_data[0][:,:,0]
             self.solve()
         # write phi to WarpX
-        mwxrun.set_phi_grid(self.phi.T)
+        mwxrun.set_phi_grid(self.phi)
 
     def solve(self):
         """The solution step. Includes getting the boundary potentials and
