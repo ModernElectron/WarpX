@@ -27,8 +27,11 @@ def initialize_testingdir(name):
     if rank == 0:
         # Use standard python random here, in case numpy rseed is being
         # used that might fix this randint call.
-        wd = os.path.join('../tests/test_files', name + "_{:06d}".format(
-            random.randint(0, 1000000)))
+        wd = os.path.join(
+            mwxutil.mewarpx_dir,
+            '../tests/temp_files',
+            name + "_{:06d}".format(random.randint(0, 1000000))
+        )
 
     if comm.Get_size() > 1:
         wd = comm.bcast(wd, root=0)
