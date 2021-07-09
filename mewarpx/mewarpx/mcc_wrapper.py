@@ -7,11 +7,31 @@ from mewarpx import mwxrun
 
 
 class MCC():
-    """Wrapper used to initialize MCC parameters"""
+
+    """Wrapper used to initialize Monte Carlo collision parameters"""
 
     def __init__(self, electron_species, ion_species, T_INERT,
                  P_INERT=None, N_INERT=None, scraper=None, **kwargs):
-        """Initialize MCC"""
+        """Initialize MCC parameters.
+
+        Arguments:
+            electron_species (picmi.Species): Species that will be producing the
+                ions via impact ionization. This will normally be electrons.
+            ion_species (picmi.Species): Ion species generated from ionization
+                events. Charge state should be specified during Species
+                construction. Also used to obtain the neutral mass.
+            T_INERT (float): Temperature for injected ions in
+                Kelvin.
+            P_INERT (float): Pressure of the neutral "target" for
+                impact ionization, in Torr. Assumed to be such that the density
+                is much larger than both the electron and ion densities, so that
+                the neutral dynamics can be ignored. Cannot be specified if
+                N_INERT is specified.
+            N_INERT (float): Neutral gas density in cm^-3. Cannot be specified
+                if P_INERT is specified.
+            scraper (pywarpx.ParticleScraper): The particle scraper is instructed
+                to save pid's for number of MCC events.
+        """
         self.electron_species = electron_species
         self.ion_species = ion_species
         self.T_INERT = T_INERT
@@ -32,11 +52,11 @@ class MCC():
 
         self.scraper = scraper
 
-        # include all collision processes that match species
+        # Use environment variable if possible, otherwise look one directory up from warpx
         path_name = os.environ.get("MCC_CROSS_SECTIONS_DIR", os.path.join(mwxutil.mewarpx_dir,
-                                    "../../warpx-data/MCC_cross_sections",
-                                    self.ion_species.particle_type))
-
+                                    "../../warpx-data/MCC_cross_sections"))
+        path_name = os.path.join(path_name, self.ion_species.particle_type)
+        # include all collision processes that match species
         file_paths = glob.glob(os.path.join(path_name + "*.dat"))
 
         elec_collision_types = {
