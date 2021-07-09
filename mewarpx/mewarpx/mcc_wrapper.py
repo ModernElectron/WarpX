@@ -108,7 +108,12 @@ class MCC():
                 scatter_dict = {"cross_section": path}
                 ion_scattering_processes[ion_collision_types[file_name]] = scatter_dict
             else:
-                raise ValueError(f"{path}: file not recognized")
+                raise ValueError(
+                    f"{path}: filename not recognized as an MCC cross-section "
+                    "file. Please move outside this folder or end with "
+                    "something other than .dat if it is not a cross-section "
+                    "file."
+                )
 
         self.mcc_electrons = picmi.MCCCollisions(
             name='coll_elec',
