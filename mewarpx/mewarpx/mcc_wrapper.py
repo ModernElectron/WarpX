@@ -27,7 +27,7 @@ class MCC():
                 is much larger than both the electron and ion densities, so that
                 the neutral dynamics can be ignored. Cannot be specified if
                 N_INERT is specified.
-            N_INERT (float): Neutral gas density in cm^-3. Cannot be specified
+            N_INERT (float): Neutral gas density in m^-3. Cannot be specified
                 if P_INERT is specified.
             scraper (pywarpx.ParticleScraper): The particle scraper is instructed
                 to save pid's for number of MCC events.
@@ -48,7 +48,8 @@ class MCC():
             raise ValueError("Must specify one of N_INERT or P_INERT")
         # set N using ideal gas law if only P is specified
         else:
-            self.N_INERT = mwxutil.ideal_gas_density(self.P_INERT, self.T_INERT)
+            # convert from cm^-3 to m^-3
+            self.N_INERT = mwxutil.ideal_gas_density(self.P_INERT, self.T_INERT) * 1e6
 
         self.scraper = scraper
 
@@ -106,6 +107,8 @@ class MCC():
             elif file_name in ion_collision_types:
                 scatter_dict = {"cross_section": path}
                 ion_scattering_processes[ion_collision_types[file_name]] = scatter_dict
+            else:
+                raise ValueError(f"{path}: file not recognized")
 
         self.mcc_electrons = picmi.MCCCollisions(
             name='coll_elec',
