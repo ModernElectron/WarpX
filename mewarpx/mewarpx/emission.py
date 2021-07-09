@@ -380,6 +380,7 @@ class ThermionicInjector(Injector):
                    "step, each with weight {:.2e}").format(
                        self.ptcl_per_step, self.weight))
         callbacks.installparticleinjection(self.inject_particles)
+        #callbacks.installafterstep(self.inject_particles)
 
     def inject_particles(self):
         """Perform the actual injection!"""
