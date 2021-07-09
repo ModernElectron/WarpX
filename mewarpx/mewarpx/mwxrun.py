@@ -35,14 +35,11 @@ class MEWarpXRun(object):
         self.initialized = False
         self.simulation = picmi.Simulation()
 
-    def init_run(self, simulation=None):
+    def init_run(self):
         if self.initialized:
             raise RuntimeError(
                 "Attempted to initialize the mwxrun class multiple times.")
         self.initialized = True
-
-        if simulation is not None:
-            self.simulation = simulation
 
         self.simulation.initialize_inputs()
         self.simulation.initialize_warpx()

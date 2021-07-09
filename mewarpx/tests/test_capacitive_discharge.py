@@ -9,8 +9,10 @@ from mewarpx import util as mwxutil
     ("name"),
     [
         'Run2D',
-        'Run2D_RZ',
-        'Run3D'
+        # For these two to work we'll need to allow python to choose which of
+        # multiple libwarpx...so files it should load.
+        # 'Run2D_RZ',
+        # 'Run3D'
     ]
 )
 def test_capacitive_discharge_multigrid(capsys, name):
@@ -22,18 +24,16 @@ def test_capacitive_discharge_multigrid(capsys, name):
     mwxutil.init_libwarpx(ndim=dim, rz=use_rz)
     from mewarpx import testing_util
     from mewarpx.setups_store import diode_setup
-    from mewarpx import mwxrun
+    from mewarpx.mwxrun import mwxrun
 
     # Include a random run number to allow parallel runs to not collide. Using
     # python randint prevents collisions due to numpy rseed below
-    #testing_util.initialize_testingdir(name)
+    testing_util.initialize_testingdir(name)
 
     # Initialize each run with consistent, randomly-chosen, rseed. Use a random
     # seed instead for initial dataframe generation.
     # np.random.seed()
     np.random.seed(92160881)
-
-    sim = mwxrun.mwxrun.simulation
 
     # Specific numbers match older run for consistency
     FREQ = 13.56e6  # MHz
@@ -63,7 +63,6 @@ def test_capacitive_discharge_multigrid(capsys, name):
         DIAG_INTERVAL=DIAG_INTERVAL,
         NUMBER_PARTICLES_PER_CELL=[16, 32],
         FIELD_DIAG_DATA_LIST=['rho_electrons', 'rho_he_ions', 'phi'],
-        SIMULATION=sim
     )
     # Only the functions we change from defaults are listed here
     run.setup_run(
@@ -78,19 +77,22 @@ def test_capacitive_discharge_multigrid(capsys, name):
 
     # Run the main WARP loop
     while run.control.check_criteria():
-        run.SIMULATION.step()
+        mwxrun.simulation.step()
 
     #######################################################################
     # Cleanup and final output                                            #
     #######################################################################
 
-    # TODO: what can be kept here between these two lines?
-    # these are commented out because I don't know what to pass in for capsys
-    # run.runresults.finalize_save()
-    # out, _ = capsys.readouterr()
+    if capsys is not None:
+        out, _ = capsys.readouterr()
 
-    # print(out)
-    # # make sure out isn't empty
-    # assert out
-# this is how I'm running it
-test_capacitive_discharge_multigrid(None, "Run2D")
+        print(out)
+        # make sure out isn't empty
+        outstr = "SimControl: Termination from criteria: eval_max_steps"
+        assert outstr in out
+    else:
+        assert False, "This wasn't run in pytest, but it passed otherwise."
+
+
+if __name__ == '__main__':
+    test_capacitive_discharge_multigrid(None, "Run2D")
