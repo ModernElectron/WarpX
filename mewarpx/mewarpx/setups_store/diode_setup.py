@@ -229,12 +229,12 @@ class DiodeRun_V1(object):
             self.init_runinfo()
         if init_fluxdiag:
             self.init_fluxdiag()
-        if init_field_diag:
-            self.init_field_diag()
         if init_simcontrol:
             self.init_simcontrol()
         if init_simulation:
             self.init_simulation()
+        if init_field_diag:
+            self.init_field_diag()
         if init_warpx:
             self.init_warpx()
 
@@ -293,28 +293,22 @@ class DiodeRun_V1(object):
                 number_of_cells=[self.NX, self.NZ],
                 lower_bound=[xmmin, zmmin],
                 upper_bound=[xmmax, zmmax],
-                bc_xmin='periodic',
-                bc_xmax='periodic',
-                bc_zmin='dirichlet',
-                bc_zmax='dirichlet',
+                lower_boundary_conditions=['periodic', 'dirichlet'],
+                upper_boundary_conditions=['periodic', 'dirichlet'],
                 warpx_potential_hi_x=self.V_ANODE_EXPRESSION,
-                warpx_potential_low_x=self.V_CATHODE,
+                warpx_potential_lo_x=self.V_CATHODE,
                 lower_boundary_conditions_particles=['periodic', 'absorbing'],
                 upper_boundary_conditions_particles=['periodic', 'absorbing'],
                 moving_window_velocity=None,
-                warpx_max_grid_size=self.NZ//self.MAX_GRID_SIZE_FACTOR
+                warpx_max_grid_size=self.NX//self.MAX_GRID_SIZE_FACTOR
             )
         elif self.dim == 3:
             self.grid = picmi.Cartesian3DGrid(
                 number_of_cells=[self.NX, self.NY, self.NZ],
                 lower_bound=[xmmin, ymmin, zmmin],
                 upper_bound=[xmmax, ymmax, zmmax],
-                bc_xmin='periodic',
-                bc_xmax='periodic',
-                bc_ymin='periodic',
-                bc_ymax='periodic',
-                bc_zmin='dirichlet',
-                bc_zmax='dirichlet',
+                lower_boundary_conditions=['periodic', 'periodic', 'dirichlet'],
+                upper_boundary_conditions=['periodic', 'periodic', 'dirichlet'],
                 warpx_potential_hi_x=self.V_ANODE_EXPRESSION,
                 warpx_potential_lo_x=self.V_CATHODE,
                 lower_boundary_conditions_particles=[
@@ -322,7 +316,7 @@ class DiodeRun_V1(object):
                 upper_boundary_conditions_particles=[
                     'periodic', 'periodic', 'absorbing'],
                 moving_window_velocity=None,
-                warpx_max_grid_size=self.NZ//self.MAX_GRID_SIZE_FACTOR
+                warpx_max_grid_size=self.NX//self.MAX_GRID_SIZE_FACTOR
             )
 
         #######################################################################
@@ -385,7 +379,7 @@ class DiodeRun_V1(object):
                 required_precision=1e-6,
                 maximum_iterations=10000
             )
-            self.solver.self_fields_verbosity = 2 if self.NONINTERAC else 0
+            #self.solver.self_fields_verbosity = 2 if self.NONINTERAC else 0
 
     def init_conductors(self):
         raise NotImplementedError(
@@ -494,7 +488,7 @@ class DiodeRun_V1(object):
         if self.INERT_GAS_TYPE is None:
             print("No inert gas ionization used")
         elif self.INERT_GAS_TYPE == 'He':
-            self.init_He_ionization()
+            self.init_He_gas()
         else:
             raise NotImplementedError(
                 "Inert gas is not yet implemented in mewarpx with "
@@ -594,10 +588,11 @@ class DiodeRun_V1(object):
 
     def init_field_diag(self):
         print('### Init Diode FieldDiag ###')
+        diagnostic_intervals = "::%i" % self.DIAG_INTERVAL
         self.field_diag = picmi.FieldDiagnostic(
             name='diags',
             grid=self.grid,
-            period=self.DIAG_INTERVAL,
+            period=diagnostic_intervals,
             data_list=self.FIELD_DIAG_DATA_LIST,
             write_dir='diags/',
         )

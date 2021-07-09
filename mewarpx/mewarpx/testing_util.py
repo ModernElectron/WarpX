@@ -5,8 +5,9 @@ init_libwarpx is run!
 import os
 import random
 
-from mewarpx import mwxutil
+from mewarpx import util as mwxutil
 from mewarpx.mwxrun import mwxrun
+from mpi4py import MPI
 
 
 def initialize_testingdir(name):
@@ -20,14 +21,17 @@ def initialize_testingdir(name):
         working directory.
     """
     wd = None
-    if mwxrun.me == 0:
+    #TODO: change this to check mwxrun.me once things are merged
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+    if rank == 0:
         # Use standard python random here, in case numpy rseed is being
         # used that might fix this randint call.
         wd = os.path.join('../tests/test_files', name + "_{:06d}".format(
             random.randint(0, 1000000)))
 
-    if mwxrun.nproc > 1:
-        wd = mwxrun.mpi_comm.bcast(wd, root=0)
+    if comm.Get_size() > 1:
+        wd = comm.bcast(wd, root=0)
 
     if wd is None:
         raise ValueError("Working directory not properly set or broadcast.")
@@ -46,15 +50,17 @@ def change_to_warpxdir(wd):
         origwd (str): Path of original working directory
     """
     origwd = os.getcwd()
-
-    if mwxrun.me == 0:
+    #TODO: change this to check mwxrun.me once things are merged
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+    if rank == 0:
         mwxutil.mkdir_p(wd)
 
-    mwxrun.mpi_comm.Barrier()
+    comm.Barrier()
 
     os.chdir(wd)
     print("Change to working directory {}".format(os.getcwd()))
 
-    mwxrun.mpi_comm.Barrier()
+    comm.Barrier()
 
     return origwd
