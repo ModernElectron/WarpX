@@ -106,8 +106,8 @@ class MCC():
                     continue
                 scatter_dict = {"cross_section": path}
                 # add energy if needed
-                if file_name in requires_energy[self.ion_species.name]:
-                    scatter_dict["energy"] = requires_energy[self.ion_species.name][file_name]
+                if file_name in requires_energy[self.ion_species.particle_type]:
+                    scatter_dict["energy"] = requires_energy[self.ion_species.particle_type][file_name]
                 # specify species for ionization
                 if file_name == "ionization.dat":
                     scatter_dict["species"] = self.ion_species
@@ -144,4 +144,4 @@ class MCC():
             scattering_processes=ion_scattering_processes
         )
 
-        mwxrun.simulation.collisions = [self.mcc_elections, self.mcc_ions]
+        mwxrun.simulation.collisions = [self.mcc_electrons, self.mcc_ions]
