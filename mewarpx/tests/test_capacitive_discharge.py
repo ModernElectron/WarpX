@@ -13,7 +13,7 @@ from mewarpx import util as mwxutil
         'Run3D'
     ]
 )
-def test_run1D_alldiags(capsys, name):
+def test_capacitive_discharge_multigrid(capsys, name):
     basename = "Run"
     use_rz = 'RZ' in name
     dim = int(name.replace(basename, '')[0])
@@ -38,24 +38,27 @@ def test_run1D_alldiags(capsys, name):
     DIAG_STEPS = 2
     DIAG_INTERVAL = DIAG_STEPS*DT
     VOLTAGE = 450.0
+    D_CA = 0.067  # m
     run = diode_setup.DiodeRun_V1(
         dim=dim,
         rz=use_rz,
         V_ANODE_CATHODE=VOLTAGE,
         V_ANODE_EXPRESSION="%.1f*sin(2*pi*%.5e*t)" % (VOLTAGE, FREQ),
-        D_CA=0.067,
+        D_CA=D_CA,
         INERT_GAS_TYPE='He',
         N_INERT=9.64e20,  # m^-3
         T_INERT=300.0,  # K
         PLASMA_DENSITY=2.56e14,  # m^-3
         T_ELEC=30000.0,  # K
-        NX=128,
-        NZ=16,
+        NX=16,
+        NZ=128,
+        # This gives equal spacing in x & z
+        PERIOD=D_CA * 16 / 128.0,
         DT=DT,
         TOTAL_TIMESTEPS=10,
         DIAG_STEPS=DIAG_STEPS,
         DIAG_INTERVAL=DIAG_INTERVAL,
-        NUMBER_PARTICLES_PER_CELL=[32, 16],
+        NUMBER_PARTICLES_PER_CELL=[16, 32],
         FIELD_DIAG_DATA_LIST=['rho_electrons', 'rho_he_ions', 'phi']
     )
     # Only the functions we change from defaults are listed here
@@ -86,4 +89,4 @@ def test_run1D_alldiags(capsys, name):
     # # make sure out isn't empty
     # assert out
 # this is how I'm running it
-test_run1D_alldiags(None, "Run2D")
+test_capacitive_discharge_multigrid(None, "Run2D")

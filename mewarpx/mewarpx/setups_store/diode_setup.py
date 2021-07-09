@@ -106,7 +106,9 @@ class DiodeRun_V1(object):
     # # satisfy the CFL condition. 1.0 would be typical; usually we use 0.4 for a
     # # safety margin
     # CFL_FACTOR = 0.4
-    # RES_LENGTH is the cell size in meters
+    # RES_LENGTH is the cell size in meters. It always reflects the z spacing,
+    # so is overwritten if NZ is given. If NX and/or NY are specified, the cell
+    # spacing in those dimensions is not guaranteed to match RES_LENGTH.
     RES_LENGTH = 0.8e-06
     # MAX_GRID_SIZE_FACTOR is the factor by which nz (the number of cells
     # in the z-direction) is reduced to obtain the max grid size parameter
@@ -155,10 +157,11 @@ class DiodeRun_V1(object):
 
         if self.dim > 1:
             if self.PERIOD is None:
-                self.PERIOD = (
-                    np.ceil(float(self.NPARTPERSTEP)/self.NPPC)
-                    * self.RES_LENGTH
-                )
+                raise ValueError("Derived period not yet supported.")
+                # self.PERIOD = (
+                #     np.ceil(float(self.NPARTPERSTEP)/self.NPPC)
+                #     * self.RES_LENGTH
+                # )
 
         if self.V_ANODE_EXPRESSION is None:
             # V_CATHODE is set so that its Fermi level is at V=0.
@@ -243,32 +246,33 @@ class DiodeRun_V1(object):
         # Set grid boundaries
         if self.dim == 1:
             # Translational symmetry in x & y, 1D simulation in z. Note warp
-            # immediately sets xmmin and ymmin to 0 when
+            # immediately sets xmin and ymin to 0 when
             # warp.w3d.initdecompositionw3d() is called, so we work with that
             # offset here, though nothing should depend on it.
-            xmmin = 0
-            xmmax = 1.0
+            xmin = 0
+            xmax = 1.0
         else:
-            xmmin = -self.PERIOD/2.0
-            xmmax = self.PERIOD/2.0
+            xmin = -self.PERIOD/2.0
+            xmax = self.PERIOD/2.0
 
         if self.dim < 3 and not self.rz:
-            ymmin = 0
-            ymmax = 1.0
+            ymin = 0
+            ymax = 1.0
         else:
-            ymmin = -self.PERIOD/2.0
-            ymmax = self.PERIOD/2.0
+            ymin = -self.PERIOD/2.0
+            ymax = self.PERIOD/2.0
 
-        zmmin = -self.OFFSET
-        zmmax = self.D_CA + self.OFFSET
+        zmin = -self.OFFSET
+        zmax = self.D_CA + self.OFFSET
 
         # Grid parameters - set grid counts
 
-        # if NX, NY, and NZ were all passed in
-        # recalculate RES_LENGTH
+        # If NZ was passed in recalculate RES_LENGTH
         # otherwise calculate NX, NY, and NZ
-        if None not in [self.NX, self.NY, self.NZ]:
-            self.RES_LENGTH = (zmmax-zmmin)/self.NZ
+        if self.NZ is not None:
+            self.RES_LENGTH = (zmax-zmin)/self.NZ
+        else:
+            self.NZ = int(round((zmax - zmin)/self.RES_LENGTH))
 
         if self.NX is None:
             if self.dim == 1:
@@ -281,8 +285,12 @@ class DiodeRun_V1(object):
             else:
                 self.NY = int(round(self.PERIOD/self.RES_LENGTH))
 
-        if self.NZ is None:
-            self.NZ = int(round((zmmax - zmmin)/self.RES_LENGTH))
+        print(
+            ("Creating grid with NX={}, NY={}, NZ={} and x, y, z limits of "
+             "[[{:.4g}, {:.4g}], [{:.4g}, {:.4g}], [{:.4g}, {:.4g}]]").format(
+                 self.NX, self.NY, self.NZ,
+                 xmin, xmax, ymin, ymax, zmin, zmax)
+        )
 
         # create the grid
         if self.dim == 1:
@@ -291,32 +299,32 @@ class DiodeRun_V1(object):
         elif self.dim == 2:
             self.grid = picmi.Cartesian2DGrid(
                 number_of_cells=[self.NX, self.NZ],
-                lower_bound=[xmmin, zmmin],
-                upper_bound=[xmmax, zmmax],
+                lower_bound=[xmin, zmin],
+                upper_bound=[xmax, zmax],
                 lower_boundary_conditions=['periodic', 'dirichlet'],
                 upper_boundary_conditions=['periodic', 'dirichlet'],
-                warpx_potential_hi_x=self.V_ANODE_EXPRESSION,
-                warpx_potential_lo_x=self.V_CATHODE,
+                warpx_potential_lo_z=self.V_CATHODE,
+                warpx_potential_hi_z=self.V_ANODE_EXPRESSION,
                 lower_boundary_conditions_particles=['periodic', 'absorbing'],
                 upper_boundary_conditions_particles=['periodic', 'absorbing'],
                 moving_window_velocity=None,
-                warpx_max_grid_size=self.NX//self.MAX_GRID_SIZE_FACTOR
+                warpx_max_grid_size=self.NZ//self.MAX_GRID_SIZE_FACTOR
             )
         elif self.dim == 3:
             self.grid = picmi.Cartesian3DGrid(
                 number_of_cells=[self.NX, self.NY, self.NZ],
-                lower_bound=[xmmin, ymmin, zmmin],
-                upper_bound=[xmmax, ymmax, zmmax],
+                lower_bound=[xmin, ymin, zmin],
+                upper_bound=[xmax, ymax, zmax],
                 lower_boundary_conditions=['periodic', 'periodic', 'dirichlet'],
                 upper_boundary_conditions=['periodic', 'periodic', 'dirichlet'],
-                warpx_potential_hi_x=self.V_ANODE_EXPRESSION,
-                warpx_potential_lo_x=self.V_CATHODE,
+                warpx_potential_lo_z=self.V_CATHODE,
+                warpx_potential_hi_z=self.V_ANODE_EXPRESSION,
                 lower_boundary_conditions_particles=[
                     'periodic', 'periodic', 'absorbing'],
                 upper_boundary_conditions_particles=[
                     'periodic', 'periodic', 'absorbing'],
                 moving_window_velocity=None,
-                warpx_max_grid_size=self.NX//self.MAX_GRID_SIZE_FACTOR
+                warpx_max_grid_size=self.NZ//self.MAX_GRID_SIZE_FACTOR
             )
 
         #######################################################################
@@ -327,7 +335,7 @@ class DiodeRun_V1(object):
         # out. For now diag_steps and total_timesteps may need to be class
         # input variables as other things above are.
 
-        # Must be run after warp boundaries (xmmin etc.) and cell counts (nx
+        # Must be run after warp boundaries (xmin etc.) and cell counts (nx
         # etc.) are set.
         # Full decomp always used for 1D parallel runs
         # Particle decomposition - each processor keeps particles across full
