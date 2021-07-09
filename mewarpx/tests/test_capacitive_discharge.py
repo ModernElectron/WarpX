@@ -22,6 +22,7 @@ def test_capacitive_discharge_multigrid(capsys, name):
     mwxutil.init_libwarpx(ndim=dim, rz=use_rz)
     from mewarpx import testing_util
     from mewarpx.setups_store import diode_setup
+    from mewarpx import mwxrun
 
     # Include a random run number to allow parallel runs to not collide. Using
     # python randint prevents collisions due to numpy rseed below
@@ -31,6 +32,8 @@ def test_capacitive_discharge_multigrid(capsys, name):
     # seed instead for initial dataframe generation.
     # np.random.seed()
     np.random.seed(92160881)
+
+    sim = mwxrun.mwxrun.simulation
 
     # Specific numbers match older run for consistency
     FREQ = 13.56e6  # MHz
@@ -59,7 +62,8 @@ def test_capacitive_discharge_multigrid(capsys, name):
         DIAG_STEPS=DIAG_STEPS,
         DIAG_INTERVAL=DIAG_INTERVAL,
         NUMBER_PARTICLES_PER_CELL=[16, 32],
-        FIELD_DIAG_DATA_LIST=['rho_electrons', 'rho_he_ions', 'phi']
+        FIELD_DIAG_DATA_LIST=['rho_electrons', 'rho_he_ions', 'phi'],
+        SIMULATION=sim
     )
     # Only the functions we change from defaults are listed here
     run.setup_run(
@@ -74,7 +78,7 @@ def test_capacitive_discharge_multigrid(capsys, name):
 
     # Run the main WARP loop
     while run.control.check_criteria():
-        run.sim.step()
+        run.SIMULATION.step()
 
     #######################################################################
     # Cleanup and final output                                            #

@@ -18,6 +18,8 @@ class DiodeRun_V1(object):
     but if "Best practices" change in a way that would change results, a new
     version can be created while existing unit tests use this.
     """
+    # The picmi simulation to be used
+    SIMULATION = None
 
     # ### ELECTRODES ###
     # Cathode temperature in K
@@ -604,7 +606,7 @@ class DiodeRun_V1(object):
             data_list=self.FIELD_DIAG_DATA_LIST,
             write_dir='diags/',
         )
-        self.sim.add_diagnostic(self.field_diag)
+        self.SIMULATION.add_diagnostic(self.field_diag)
 
     def init_simcontrol(self):
         print('### Init Diode SimControl ###')
@@ -612,18 +614,22 @@ class DiodeRun_V1(object):
 
     def init_simulation(self):
         print('### Init Simulation Setup ###')
-        self.sim = picmi.Simulation(
-            solver=self.solver,
-            time_step_size=self.DT,
-            max_steps=self.TOTAL_TIMESTEPS
-        )
-
+        if self.SIMULATION is None:
+            self.SIMULATION = picmi.Simulation(
+                solver=self.solver,
+                time_step_size=self.DT,
+                max_steps=self.TOTAL_TIMESTEPS
+            )
+        else:
+            self.SIMULATION.solver = self.solver
+            self.SIMULATION.time_step_size = self.DT
+            self.SIMULATION.max_steps = self.TOTAL_TIMESTEPS
         # Add particle species if any were defined
         if self.SPECIES is not None:
             if self.NUMBER_PARTICLES_PER_CELL is None:
                 raise ValueError("NUMBER_PARTICLES_PER_CELL cannot be None")
             for species in self.SPECIES:
-                self.sim.add_species(
+                self.SIMULATION.add_species(
                     species,
                     layout=picmi.GriddedLayout(
                         n_macroparticle_per_cell=self.NUMBER_PARTICLES_PER_CELL,
@@ -632,4 +638,5 @@ class DiodeRun_V1(object):
                 )
 
     def init_warpx(self):
-        mwxrun.init_run(simulation=self.sim)
+        print('### Init Simulation Run ###')
+        mwxrun.init_run()
