@@ -3,7 +3,7 @@ from pywarpx import picmi
 from mewarpx import util as mwxutil
 
 # For use later to sync with diode test template and access sim object in mwxrun
-from mewarpx import mwxrun
+from mewarpx.mwxrun import mwxrun
 
 
 class MCC():
@@ -31,12 +31,18 @@ class MCC():
                 if P_INERT is specified.
             scraper (pywarpx.ParticleScraper): The particle scraper is instructed
                 to save pid's for number of MCC events.
+            **kwargs that can be included:
+            exclude_collisions (list): A list of collision types to exclude.
         """
         self.electron_species = electron_species
         self.ion_species = ion_species
         self.T_INERT = T_INERT
         self.N_INERT = N_INERT
         self.P_INERT = P_INERT
+
+        self.exclude_collisions = kwargs.get("exclude_collisions", None)
+        if self.exclude_collisions is None:
+            self.exclude_collisions = []
 
         if self.N_INERT is not None:
             # N and P cannot both be specified
@@ -95,6 +101,9 @@ class MCC():
             file_name = os.path.absename(path)
             # if electron process
             if file_name in elec_collision_types:
+                # exclude collisions
+                if elec_collision_types[file_name] in self.exclude_collisions:
+                    continue
                 scatter_dict = {"cross_section": path}
                 # add energy if needed
                 if file_name in requires_energy[self.ion_species.name]:
@@ -105,6 +114,9 @@ class MCC():
                 elec_scattering_processes[elec_collision_types[file_name]] = scatter_dict
             # if ion process
             elif file_name in ion_collision_types:
+                # exclude collisions
+                if ion_collision_types[file_name] in self.exclude_collisions:
+                    continue
                 scatter_dict = {"cross_section": path}
                 ion_scattering_processes[ion_collision_types[file_name]] = scatter_dict
             else:
@@ -131,3 +143,5 @@ class MCC():
             background_temperature=self.T_INERT,
             scattering_processes=ion_scattering_processes
         )
+
+        mwxrun.simulation.collisions = [self.mcc_elections, self.mcc_ions]

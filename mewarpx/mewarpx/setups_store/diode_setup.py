@@ -7,7 +7,7 @@ from pywarpx.picmi import constants
 
 from mewarpx.mwxrun import mwxrun
 from mewarpx.sim_control import SimControl
-
+from mewarpx import mcc_wrapper
 
 class DiodeRun_V1(object):
 
@@ -523,51 +523,16 @@ class DiodeRun_V1(object):
         )
         self.SPECIES.append(self.ions)
 
-        # MCC collisions
-        cross_sec_direc = '../../../warpx-data/MCC_cross_sections/He/'
-        mcc_electrons = picmi.MCCCollisions(
-            name='coll_elec',
-            species=self.electrons,
-            background_density=self.N_INERT,
-            background_temperature=self.T_INERT,
-            background_mass=self.ions.mass,
-            scattering_processes={
-                'elastic': {
-                    'cross_section': cross_sec_direc+'electron_scattering.dat'
-                },
-                'excitation1': {
-                    'cross_section': cross_sec_direc+'excitation_1.dat',
-                    'energy': 19.82
-                },
-                'excitation2': {
-                    'cross_section': cross_sec_direc+'excitation_2.dat',
-                    'energy': 20.61
-                },
-                'ionization': {
-                    'cross_section': cross_sec_direc+'ionization.dat',
-                    'energy': 24.55,
-                    'species': self.ions
-                },
-            }
-        )
+        if not hasattr(self, "exclude_collisions"):
+            self.exclude_collisions = None
 
-        mcc_ions = picmi.MCCCollisions(
-            name='coll_ion',
-            species=self.ions,
-            background_density=self.N_INERT,
-            background_temperature=self.T_INERT,
-            scattering_processes={
-                'elastic': {
-                    'cross_section': cross_sec_direc+'ion_scattering.dat'
-                },
-                'back': {
-                    'cross_section': cross_sec_direc+'ion_back_scatter.dat'
-                },
-                # 'charge_exchange': {
-                #    'cross_section': cross_sec_direc+'charge_exchange.dat'
-                # }
-            }
-        )
+        mcc_wrapper.MCC(
+            electron_species=self.electrons,
+            ion_species=self.ions,
+            T_INERT=self.T_INERT,
+            P_INERT=self.P_INERT,
+            N_INERT=self.N_INERT,
+            exclude_collisions = self.exclude_collisions)
 
     def init_reflection(self):
         raise NotImplementedError(
