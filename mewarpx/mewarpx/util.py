@@ -3,13 +3,13 @@ Utility functions for mewarpx.
 """
 import inspect
 import os
-from scipy import constants
+from pywarpx.picmi import constants
 
 from pywarpx import geometry
 
 # CONSTANTS - SI
-kb_J = constants.value("Boltzmann constant") # J/K
-torr_SI = constants.value("standard atmosphere")/760 # 1 torr in Pa
+kb_J = constants.kb # J/K
+torr_SI = constants.torr_SI # 1 torr in Pa
 erg_SI = 1e-7 # 1 erg in J
 
 # CONSTANTS - CGS

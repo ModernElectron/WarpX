@@ -9,20 +9,35 @@ from mewarpx import mwxrun
 class MCC():
     """Wrapper used to initialize MCC parameters"""
 
-    def __init__(self, electron_species, ion_species, P_INERT,
-                 T_INERT, scraper=None, **kwargs):
+    def __init__(self, electron_species, ion_species, T_INERT,
+                 P_INERT=None, N_INERT=None, scraper=None, **kwargs):
         """Initialize MCC"""
         self.electron_species = electron_species
         self.ion_species = ion_species
-        self.P_INERT = P_INERT
         self.T_INERT = T_INERT
-        self.N_INERT = mwxutil.ideal_gas_density(self.P_INERT, self.T_INERT)
+        self.N_INERT = N_INERT
+        self.P_INERT = P_INERT
+
+        if self.N_INERT is not None:
+            # N and P cannot both be specified
+            if self.P_INERT is not None:
+                raise ValueError("Must specify N_INERT or P_INERT, not both")
+            # if N is not None and P is None, everything is all good
+        # N and P cannot both be unspecified
+        elif self.P_INERT is None:
+            raise ValueError("Must specify one of N_INERT or P_INERT")
+        # set N using ideal gas law if only P is specified
+        else:
+            self.N_INERT = mwxutil.ideal_gas_density(self.P_INERT, self.T_INERT)
+
         self.scraper = scraper
 
         # include all collision processes that match species
-        path_name = os.path.join("../../../warpx-data/MCC_cross_sections", self.ion_species.particle_type)
+        path_name = os.environ.get("MCC_CROSS_SECTIONS_DIR", os.path.join(mwxutil.mewarpx_dir,
+                                    "../../warpx-data/MCC_cross_sections",
+                                    self.ion_species.particle_type))
 
-        file_paths = glob.glob(path_name + "/*.dat")
+        file_paths = glob.glob(os.path.join(path_name + "*.dat"))
 
         elec_collision_types = {
                             "electron_scattering.dat": "elastic",
