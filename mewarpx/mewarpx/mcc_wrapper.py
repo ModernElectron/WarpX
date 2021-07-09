@@ -64,7 +64,7 @@ class MCC():
                                     "../../warpx-data/MCC_cross_sections"))
         path_name = os.path.join(path_name, self.ion_species.particle_type)
         # include all collision processes that match species
-        file_paths = glob.glob(os.path.join(path_name + "*.dat"))
+        file_paths = glob.glob(os.path.join(path_name, "*.dat"))
 
         elec_collision_types = {
                             "electron_scattering.dat": "elastic",
@@ -97,8 +97,8 @@ class MCC():
         elec_scattering_processes = {}
         ion_scattering_processes = {}
 
-        for path in range(len(file_paths)):
-            file_name = os.path.absename(path)
+        for path in file_paths:
+            file_name = os.path.basename(path)
             # if electron process
             if file_name in elec_collision_types:
                 # exclude collisions
@@ -127,21 +127,27 @@ class MCC():
                     "file."
                 )
 
-        self.mcc_electrons = picmi.MCCCollisions(
-            name='coll_elec',
-            species=self.electron_species,
-            background_density=self.N_INERT,
-            background_temperature=self.T_INERT,
-            background_mass=self.ion_species.mass,
-            scattering_processes=elec_scattering_processes
-        )
+        # only initialize mcc particle speicies if scattering processes exist
+        if elec_scattering_processes:
+            self.mcc_electrons = picmi.MCCCollisions(
+                name='coll_elec',
+                species=self.electron_species,
+                background_density=self.N_INERT,
+                background_temperature=self.T_INERT,
+                background_mass=self.ion_species.mass,
+                scattering_processes=elec_scattering_processes
+            )
 
-        self.mcc_ions = picmi.MCCCollisions(
-            name='coll_ion',
-            species=self.ion_species,
-            background_density=self.N_INERT,
-            background_temperature=self.T_INERT,
-            scattering_processes=ion_scattering_processes
-        )
+        if ion_scattering_processes:
+            self.mcc_ions = picmi.MCCCollisions(
+                name='coll_ion',
+                species=self.ion_species,
+                background_density=self.N_INERT,
+                background_temperature=self.T_INERT,
+                scattering_processes=ion_scattering_processes
+            )
+
+        if not hasattr(self, "mcc_electrons") and not hasattr(self, "mcc_ions"):
+            raise ValueError("No scattering processes for electron or ion species.")
 
         mwxrun.simulation.collisions = [self.mcc_electrons, self.mcc_ions]
