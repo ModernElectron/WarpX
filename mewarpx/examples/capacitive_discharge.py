@@ -8,6 +8,7 @@ mwxutil.init_libwarpx(ndim=2, rz=False)
 
 from mewarpx.mwxrun import mwxrun
 from mewarpx.poisson_pseudo_1d import PoissonSolverPseudo1D
+from mewarpx.mcc_wrapper import MCC
 from mewarpx.diags_store import diag_base
 
 from pywarpx import picmi
@@ -98,49 +99,9 @@ ions = picmi.Species(
 )
 
 # MCC collisions
-cross_sec_direc = '../../../warpx-data/MCC_cross_sections/He/'
-mcc_electrons = picmi.MCCCollisions(
-    name='coll_elec',
-    species=electrons,
-    background_density=N_INERT,
-    background_temperature=T_INERT,
-    background_mass=ions.mass,
-    scattering_processes={
-        'elastic' : {
-            'cross_section' : cross_sec_direc+'electron_scattering.dat'
-        },
-        'excitation1' : {
-            'cross_section': cross_sec_direc+'excitation_1.dat',
-            'energy' : 19.82
-        },
-        'excitation2' : {
-            'cross_section': cross_sec_direc+'excitation_2.dat',
-            'energy' : 20.61
-        },
-        'ionization' : {
-            'cross_section' : cross_sec_direc+'ionization.dat',
-            'energy' : 24.55,
-            'species' : ions
-        },
-    }
-)
-
-mcc_ions = picmi.MCCCollisions(
-    name='coll_ion',
-    species=ions,
-    background_density=N_INERT,
-    background_temperature=T_INERT,
-    scattering_processes={
-        'elastic' : {
-            'cross_section' : cross_sec_direc+'ion_scattering.dat'
-        },
-        'back' : {
-            'cross_section' : cross_sec_direc+'ion_back_scatter.dat'
-        },
-        # 'charge_exchange' : {
-        #    'cross_section' : cross_sec_direc+'charge_exchange.dat'
-        # }
-    }
+mcc_wrapper = MCC(
+    electrons, ions, T_INERT=T_INERT, N_INERT=N_INERT,
+    exclude_collisions=['charge_exchange']
 )
 
 ##########################
@@ -180,42 +141,39 @@ field_diag = picmi.FieldDiagnostic(
 # simulation setup
 ##########################
 
-sim = picmi.Simulation(
-    solver = solver,
-    time_step_size = DT,
-    max_steps = max_steps,
-    warpx_collisions=[mcc_electrons, mcc_ions],
-    verbose=0
-)
+mwxrun.simulation.solver = solver
+mwxrun.simulation.time_step_size = DT
+mwxrun.simulation.max_steps = max_steps
 
-sim.add_species(
+mwxrun.simulation.add_species(
     electrons,
     layout = picmi.GriddedLayout(
         n_macroparticle_per_cell=number_per_cell_each_dim, grid=grid
     )
 )
-sim.add_species(
+mwxrun.simulation.add_species(
     ions,
     layout = picmi.GriddedLayout(
         n_macroparticle_per_cell=number_per_cell_each_dim, grid=grid
     )
 )
 
-sim.add_diagnostic(field_diag)
+mwxrun.simulation.add_diagnostic(field_diag)
 # sim.add_diagnostic(restart_dumps)
 
 ##########################
 # WarpX and mewarpx initialization
 ##########################
 
-mwxrun.init_run(simulation=sim)
+mwxrun.init_run()
 
 ##########################
 # Add direct solver
 ##########################
 
 anode_voltage = lambda t: VOLTAGE * np.sin(2.0 * np.pi * FREQ * t)
-# comment line below to use the multigrid solver
+# comment line below and uncomment 'warpx_potential_hi_z' above to use
+# the multigrid solver
 my_solver = PoissonSolverPseudo1D(right_voltage=anode_voltage)
 
 ##########################
@@ -228,7 +186,7 @@ diag_base.TextDiag(diag_steps=diag_steps, preset_string='perfdebug')
 # simulation run
 ##########################
 
-sim.step()
+mwxrun.simulation.step()
 
 ##########################
 # collect diagnostics
@@ -239,6 +197,8 @@ if mwxrun.me == 0:
     import yt
 
     data_dirs = glob.glob('diags/diags*')
+    if len(data_dirs) == 0:
+        raise RuntimeError("No data files found.")
 
     for ii, data in enumerate(data_dirs):
 
