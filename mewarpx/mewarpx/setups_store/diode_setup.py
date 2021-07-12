@@ -385,9 +385,7 @@ class DiodeRun_V1(object):
         elif self.dim in [2, 3]:
             if self.DIRECT_SOLVER:
                 self.solver = poisson_pseudo_1d.PoissonSolverPseudo1D(
-                    grid=self.grid,
-                    left_voltage=self.V_CATHODE,
-                    right_voltage=self.V_ANODE
+                    grid=self.grid
                 )
                 return
             self.solver = picmi.ElectrostaticSolver(

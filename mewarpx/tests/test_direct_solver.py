@@ -1,6 +1,7 @@
 """Test full 1D diode run with diagnostics."""
 import pytest
 import numpy as np
+import pandas
 
 from mewarpx import util as mwxutil
 
@@ -23,13 +24,13 @@ def test_capacitive_discharge_multigrid():
     # np.random.seed()
     np.random.seed(92160881)
 
-    # time-dependent anode voltage
-    anode_voltage = lambda t: VOLTAGE * np.sin(2.0 * np.pi * FREQ * t)
+    # set to False to regenerate the reference data
+    DIRECT_SOLVER = True
 
     # Specific numbers match older run for consistency
     FREQ = 13.56e6  # MHz
     DT = 1.0 / (400 * FREQ)
-    DIAG_STEPS = 10
+    DIAG_STEPS = 50
     DIAG_INTERVAL = DIAG_STEPS*DT
     VOLTAGE = 450.0
     D_CA = 0.067  # m
@@ -37,9 +38,12 @@ def test_capacitive_discharge_multigrid():
     NZ = 128
     run = diode_setup.DiodeRun_V1(
         dim=dim,
-        DIRECT_SOLVER=True,
+        DIRECT_SOLVER=DIRECT_SOLVER,
         V_ANODE_CATHODE=VOLTAGE,
-        V_ANODE_EXPRESSION=anode_voltage,
+        V_ANODE_EXPRESSION=(
+            lambda t: VOLTAGE * np.sin(2.0 * np.pi * FREQ * t) if DIRECT_SOLVER
+            else "%.1f*sin(2*pi*%.5e*t)" % (VOLTAGE, FREQ)
+        ),
         D_CA=D_CA,
         INERT_GAS_TYPE='He',
         N_INERT=9.64e20,  # m^-3
@@ -73,7 +77,10 @@ def test_capacitive_discharge_multigrid():
         mwxrun.simulation.step()
 
     #######################################################################
-    # Cleanup and final output                                            #
+    # Check rho and phi results against reference data from MGML solver   #
     #######################################################################
 
-    assert True
+    df = pandas.DataFrame(columns=['rho', 'phi'])
+    df['rho'] = np.mean(mwxrun.get_gathered_rho_grid()[0], axis=0)[1:-1,0]
+    df['phi'] = np.mean(mwxrun.get_gathered_phi_grid()[0], axis=0)
+    assert testing_util.test_df_vs_ref(name, df)
