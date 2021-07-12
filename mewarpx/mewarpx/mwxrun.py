@@ -33,7 +33,7 @@ class MEWarpXRun(object):
 
     def __init__(self):
         self.initialized = False
-        self.simulation = picmi.Simulation()
+        self.simulation = picmi.Simulation(verbose=0)
 
     def init_run(self):
         if self.initialized:
