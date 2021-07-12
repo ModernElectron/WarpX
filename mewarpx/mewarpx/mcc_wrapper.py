@@ -29,8 +29,8 @@ class MCC():
                 N_INERT is specified.
             N_INERT (float): Neutral gas density in m^-3. Cannot be specified
                 if P_INERT is specified.
-            scraper (pywarpx.ParticleScraper): The particle scraper is instructed
-                to save pid's for number of MCC events.
+            scraper (pywarpx.ParticleScraper): The particle scraper is
+                instructed to save pid's for number of MCC events.
             **kwargs that can be included:
             exclude_collisions (list): A list of collision types to exclude.
         """
@@ -55,43 +55,49 @@ class MCC():
         # set N using ideal gas law if only P is specified
         else:
             # convert from cm^-3 to m^-3
-            self.N_INERT = mwxutil.ideal_gas_density(self.P_INERT, self.T_INERT) * 1e6
+            self.N_INERT = (
+                mwxutil.ideal_gas_density(self.P_INERT, self.T_INERT) * 1e6
+            )
 
         self.scraper = scraper
 
-        # Use environment variable if possible, otherwise look one directory up from warpx
-        path_name = os.environ.get("MCC_CROSS_SECTIONS_DIR", os.path.join(mwxutil.mewarpx_dir,
-                                    "../../warpx-data/MCC_cross_sections"))
+        # Use environment variable if possible, otherwise look one
+        # directory up from warpx
+        path_name = os.environ.get(
+            "MCC_CROSS_SECTIONS_DIR", os.path.join(
+                mwxutil.mewarpx_dir, "../../../warpx-data/MCC_cross_sections"
+            )
+        )
         path_name = os.path.join(path_name, self.ion_species.particle_type)
         # include all collision processes that match species
         file_paths = glob.glob(os.path.join(path_name, "*.dat"))
 
         elec_collision_types = {
-                            "electron_scattering.dat": "elastic",
-                            "excitation_1.dat": "excitation1",
-                            "excitation_2.dat": "excitation2",
-                            "ionization.dat": "ionization",
-                           }
+            "electron_scattering": "elastic",
+            "excitation_1": "excitation1",
+            "excitation_2": "excitation2",
+            "ionization": "ionization",
+        }
         ion_collision_types = {
-                            "ion_scattering.dat": "elastic",
-                            "ion_back_scatter.dat": "back",
-                            "charge_exchange.dat": "charge_exchange"
-                            }
-        requires_energy = {
-                            "Ar": {
-                                "excitation_1.dat": 11.5,
-                                "ionization.dat": 15.7596112
-                                },
-                            "He": {
-                                "excitation_1.dat": 19.82,
-                                "excitation_2.dat": 20.61,
-                                "ionization.dat": 24.55
-                                },
-                            "Xe": {
-                                "excitation_1.dat": 8.315,
-                                "ionization.dat": 12.1298431
-                                }
-                        }
+            "ion_scattering": "elastic",
+            "ion_back_scatter": "back",
+            "charge_exchange": "charge_exchange"
+        }
+        required_energy = {
+            "He": {
+                "excitation_1": 19.82,
+                "excitation_2": 20.61,
+                "ionization": 24.55
+            },
+            "Ar": {
+                "excitation_1": 11.5,
+                "ionization": 15.7596112
+            },
+            "Xe": {
+                "excitation_1": 8.315,
+                "ionization": 12.1298431
+            }
+        }
 
         # build scattering process dictionaries
         elec_scattering_processes = {}
@@ -99,26 +105,33 @@ class MCC():
 
         for path in file_paths:
             file_name = os.path.basename(path)
+            coll_key = file_name.split('.dat')[0]
+
             # if electron process
-            if file_name in elec_collision_types:
-                # exclude collisions
-                if elec_collision_types[file_name] in self.exclude_collisions:
+            if coll_key in elec_collision_types:
+                coll_type = elec_collision_types[coll_key]
+                # exclude collision type if specified
+                if coll_type in self.exclude_collisions:
                     continue
                 scatter_dict = {"cross_section": path}
                 # add energy if needed
-                if file_name in requires_energy[self.ion_species.particle_type]:
-                    scatter_dict["energy"] = requires_energy[self.ion_species.particle_type][file_name]
+                ion = self.ion_species.particle_type
+                if coll_key in required_energy[ion]:
+                    scatter_dict["energy"] = required_energy[ion][coll_key]
                 # specify species for ionization
-                if file_name == "ionization.dat":
+                if coll_key == "ionization":
                     scatter_dict["species"] = self.ion_species
-                elec_scattering_processes[elec_collision_types[file_name]] = scatter_dict
+                elec_scattering_processes[coll_type] = scatter_dict
+
             # if ion process
-            elif file_name in ion_collision_types:
-                # exclude collisions
-                if ion_collision_types[file_name] in self.exclude_collisions:
+            elif coll_key in ion_collision_types:
+                coll_type = ion_collision_types[coll_key]
+                # exclude collision type if specified
+                if coll_type in self.exclude_collisions:
                     continue
                 scatter_dict = {"cross_section": path}
-                ion_scattering_processes[ion_collision_types[file_name]] = scatter_dict
+                ion_scattering_processes[coll_type] = scatter_dict
+
             else:
                 raise ValueError(
                     f"{path}: filename not recognized as an MCC cross-section "
@@ -127,9 +140,16 @@ class MCC():
                     "file."
                 )
 
-        # only initialize mcc particle speicies if scattering processes exist
+        # raise an error if no scattering processes exist
+        if (not elec_scattering_processes) and (not ion_scattering_processes):
+            raise ValueError(
+                "No scattering processes for electron or ion species."
+            )
+
+        mwxrun.simulation.collisions = []
+
         if elec_scattering_processes:
-            self.mcc_electrons = picmi.MCCCollisions(
+            self.electron_mcc = picmi.MCCCollisions(
                 name='coll_elec',
                 species=self.electron_species,
                 background_density=self.N_INERT,
@@ -137,17 +157,14 @@ class MCC():
                 background_mass=self.ion_species.mass,
                 scattering_processes=elec_scattering_processes
             )
+            mwxrun.simulation.collisions.append(self.electron_mcc)
 
         if ion_scattering_processes:
-            self.mcc_ions = picmi.MCCCollisions(
+            self.ion_mcc = picmi.MCCCollisions(
                 name='coll_ion',
                 species=self.ion_species,
                 background_density=self.N_INERT,
                 background_temperature=self.T_INERT,
                 scattering_processes=ion_scattering_processes
             )
-
-        if not hasattr(self, "mcc_electrons") and not hasattr(self, "mcc_ions"):
-            raise ValueError("No scattering processes for electron or ion species.")
-
-        mwxrun.simulation.collisions = [self.mcc_electrons, self.mcc_ions]
+            mwxrun.simulation.collisions.append(self.ion_mcc)
