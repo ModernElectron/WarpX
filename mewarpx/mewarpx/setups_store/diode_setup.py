@@ -7,7 +7,7 @@ from pywarpx.picmi import constants
 
 from mewarpx.mwxrun import mwxrun
 from mewarpx.sim_control import SimControl
-from mewarpx import mcc_wrapper
+from mewarpx import mcc_wrapper, poisson_pseudo_1d
 
 class DiodeRun_V1(object):
 
@@ -143,6 +143,9 @@ class DiodeRun_V1(object):
     NY = None
     # number of cells in the z direction
     NZ = None
+    # should the direct solver be used?
+    DIRECT_SOLVER = False
+
 
     def __init__(self, dim=1, rz=False, **kwargs):
         for kw in list(kwargs.keys()):
@@ -381,6 +384,13 @@ class DiodeRun_V1(object):
                 "1D solving is not yet implemented in mewarpx")
             # self.solver = poisson1d.PoissonSolver1D()
         elif self.dim in [2, 3]:
+            if self.DIRECT_SOLVER:
+                self.solver = poisson_pseudo_1d.PoissonSolverPseudo1D(
+                    grid=self.grid,
+                    left_voltage=self.V_CATHODE,
+                    right_voltage=self.V_ANODE
+                )
+                return
             self.solver = picmi.ElectrostaticSolver(
                 grid=self.grid,
                 method='Multigrid',

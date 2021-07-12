@@ -71,6 +71,8 @@ print('  Total time = %.3e s (%i timesteps)' % (TOTAL_TIME, max_steps))
 # physics components
 ##########################
 
+anode_voltage = lambda t: VOLTAGE * np.sin(2.0 * np.pi * FREQ * t)
+
 v_rms_elec = np.sqrt(constants.kb * T_ELEC / constants.m_e)
 v_rms_ion = np.sqrt(constants.kb * T_INERT / M_ION)
 
@@ -116,14 +118,19 @@ grid = picmi.Cartesian2DGrid(
     upper_boundary_conditions=['periodic', 'dirichlet'],
     lower_boundary_conditions_particles=['periodic', 'absorbing'],
     upper_boundary_conditions_particles=['periodic', 'absorbing'],
-    # warpx_potential_hi_z = "%.1f*sin(2*pi*%.5e*t)" % (VOLTAGE, FREQ),
+    warpx_potential_hi_z = anode_voltage, #"%.1f*sin(2*pi*%.5e*t)" % (VOLTAGE, FREQ),
     moving_window_velocity = None,
     warpx_max_grid_size = nz//4
 )
 
-solver = picmi.ElectrostaticSolver(
-    grid=grid, method='Multigrid', required_precision=1e-12
-)
+##########################
+# declare solver
+##########################
+
+# solver = picmi.ElectrostaticSolver(
+#    grid=grid, method='Multigrid', required_precision=1e-12
+# )
+solver = PoissonSolverPseudo1D(grid=grid)
 
 ##########################
 # diagnostics
@@ -166,15 +173,6 @@ mwxrun.simulation.add_diagnostic(field_diag)
 ##########################
 
 mwxrun.init_run()
-
-##########################
-# Add direct solver
-##########################
-
-anode_voltage = lambda t: VOLTAGE * np.sin(2.0 * np.pi * FREQ * t)
-# comment line below and uncomment 'warpx_potential_hi_z' above to use
-# the multigrid solver
-my_solver = PoissonSolverPseudo1D(right_voltage=anode_voltage)
 
 ##########################
 # Add ME diagnostic

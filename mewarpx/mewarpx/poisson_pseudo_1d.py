@@ -3,42 +3,84 @@ from scipy.sparse import csc_matrix, linalg as sla
 
 from mewarpx.mwxrun import mwxrun
 from pywarpx import callbacks
-from pywarpx.picmi import constants
+from pywarpx.picmi import Cartesian2DGrid, ElectrostaticSolver, constants
 
-class PoissonSolverPseudo1D(object):
+class PoissonSolverPseudo1D(ElectrostaticSolver):
 
-    def __init__(self, left_voltage=0, right_voltage=0):
+    def __init__(self, grid, **kwargs):
         """Direct solver for the Poisson equation using superLU. This solver is
         useful for pseudo 1D cases i.e. diode simulations with small x extent.
 
         Arguments:
-            right_voltage/left_voltage (float or callable): Value or function
-            to calculate value of the potential on the left and right side of
-            the domain. If callable that function should accept simulation time
-            as an argument.
+            grid (picmi.Cartesian2DGrid): Instance of the grid on which the
+            solver will be installed.
         """
+        # Sanity check that this solver is appropriate to use
+        if not isinstance(grid, Cartesian2DGrid):
+            raise RuntimeError('Direct solver can only be used on a 2D grid.')
 
-        if not np.isclose(mwxrun.dx, mwxrun.dz):
-            raise RuntimeError('Direct solver requires dx = dz.')
+        super(PoissonSolverPseudo1D, self).__init__(
+            grid=grid, method=kwargs.pop('method', 'Multigrid'),
+            required_precision=1, **kwargs
+        )
 
-        self.nx = mwxrun.nx
-        self.nz = mwxrun.nz
-        self.dx = mwxrun.dz
-
-        self.nxguardrho = 2
-        self.nzguardrho = 2
-        self.nxguardphi = 1
-        self.nzguardphi = 1
-
+    def initialize_inputs(self):
+        """Grab geometrical quantities from the grid. The boudary potentials
+        are also obtained from the grid using 'warpx_potential_zmin' for the
+        left_voltage and 'warpx_potential_zmax' for the right_voltage.
+        These can be given as floats or callable functions that return the
+        potential. If callable that function should accept simulation time
+        as an argument."""
+        # grab the boundary potentials from the grid object
+        left_voltage = self.grid.potential_zmin
+        if left_voltage is None:
+            left_voltage = 0.0
+        if isinstance(left_voltage, str):
+            raise AttributeError(
+                "The direct solver requires a float or a callable as argument "
+                "for 'warpx_potential_zmin'."
+            )
         if callable(left_voltage):
             self.left_voltage = left_voltage
         else:
             self.left_voltage = lambda x: left_voltage
 
+        right_voltage = self.grid.potential_zmax
+        if right_voltage is None:
+            right_voltage = 0.0
+        if isinstance(right_voltage, str):
+            raise AttributeError(
+                "The direct solver requires a float or a callable as argument "
+                "for 'warpx_potential_zmax'."
+            )
         if callable(right_voltage):
             self.right_voltage = right_voltage
         else:
             self.right_voltage = lambda x: right_voltage
+
+        # set WarpX boundary potentials to None since we will handle it
+        # ourselves in this solver
+        self.grid.potential_xmin = None
+        self.grid.potential_xmax = None
+        self.grid.potential_ymin = None
+        self.grid.potential_ymax = None
+        self.grid.potential_zmin = None
+        self.grid.potential_zmax = None
+
+        super(PoissonSolverPseudo1D, self).initialize_inputs()
+
+        self.nx = self.grid.nx
+        self.nz = self.grid.ny
+        self.dx = (self.grid.xmax - self.grid.xmin) / self.nx
+        self.dz = (self.grid.ymax - self.grid.ymin) / self.nz
+
+        if not np.isclose(self.dx, self.dz):
+            raise RuntimeError('Direct solver requires dx = dz.')
+
+        self.nxguardrho = 2
+        self.nzguardrho = 2
+        self.nxguardphi = 1
+        self.nzguardphi = 1
 
         self.phi = np.zeros(
             (self.nx + 1 + 2*self.nxguardphi,
