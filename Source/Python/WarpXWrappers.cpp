@@ -511,12 +511,4 @@ extern "C"
         mypc.Redistribute();
     }
 
-    int warpx_getMyProc() {
-        return amrex::ParallelDescriptor::MyProc();
-    }
-
-    int warpx_getNProcs() {
-        return amrex::ParallelDescriptor::NProcs();
-    }
-
 }
