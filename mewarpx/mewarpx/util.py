@@ -9,6 +9,7 @@ import numpy as np
 import minerva.util as minutil
 
 from pywarpx import geometry
+from mewarpx import mwxconstants as constants
 
 # Pass comm_world to sim.step(<steps>, <comm_world>) to send comm_world to amrex
 
@@ -164,3 +165,17 @@ def mkdir_p(path):
             pass
         else:
             raise
+
+
+def ideal_gas_density(p, T):
+    """Calculate neutral gas density (in 1/cm^3) from the ideal gas law using
+    pressure in Torr.
+
+    Arguments:
+        p (float): Gas pressure (Torr)
+        T (float): Mean gas temperature (K)
+
+    Returns:
+        N (float): Number density of gas atoms/molecules (1/cm^3)
+    """
+    return (p * constants.torr_cgs) / (constants.kb_cgs * T)
