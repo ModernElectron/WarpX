@@ -146,7 +146,6 @@ class DiodeRun_V1(object):
     # should the direct solver be used?
     DIRECT_SOLVER = False
 
-
     def __init__(self, dim=1, rz=False, **kwargs):
         for kw in list(kwargs.keys()):
             setattr(self, kw, kwargs[kw])
