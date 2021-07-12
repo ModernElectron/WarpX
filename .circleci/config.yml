@@ -57,7 +57,7 @@ jobs:
             export WarpX_OPENPMD=OFF
             export WarpX_PSATD=OFF
             export WarpX_QED=OFF
-            export WarpX_ME_SOLVER=ON
+            export ME_SOLVER=ON
             export CC=$(which clang)
             export CXX=$(which clang++)
             python3 -m pip install -v .
