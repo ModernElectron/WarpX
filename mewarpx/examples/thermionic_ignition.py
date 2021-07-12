@@ -20,7 +20,8 @@ constants = picmi.constants
 
 P_INERT = 2.0 # torr
 T_INERT = 300.0 # K
-N_INERT = (P_INERT * minutil.torr_cgs) / (minutil.kb_cgs * T_INERT) # m^-3
+torr_to_pascals = 133.322
+N_INERT = (P_INERT * torr_to_pascals) / (constants.kb * T_INERT) # m^-3
 
 D_CA = 1e-4 # m
 V_bias = 30 # V
@@ -38,7 +39,7 @@ ymin = 0.0
 
 xmax = D_CA / ny * nx
 ymax = D_CA
-number_per_cell_eacg_dim = [16, 16]
+number_per_cell_each_dim = [16, 16]
 
 TOTAL_TIME = 1.0e-9 # s
 DIAG_INTERVAL = 1.0e-10
@@ -156,7 +157,7 @@ sim = picmi.Simulation(
 sim.add_species(
     electrons,
     layout=picmi.GriddedLayout(
-        n_macroparticle_per_cell=number_per_cell_eacg_dim,
+        n_macroparticle_per_cell=number_per_cell_each_dim,
         grid=grid
     )
 )
@@ -164,19 +165,19 @@ sim.add_species(
 sim.add_species(
     ions,
     layout=picmi.GriddedLayout(
-        n_macroparticle_per_cell=number_per_cell_eacg_dim,
+        n_macroparticle_per_cell=number_per_cell_each_dim,
         grid=grid
     )
 )
 
-#sim.add_diagnostic(field_diag)
+sim.add_diagnostic(field_diag)
 
 mwxrun.init_run(simulation=sim)
 
 ######################################
 # Add ME emission
 #####################################
-T_cathode = 1100.0 # K
+T_cathode = 1100.0 + 273.15 # K
 WF_cathode = 2.0 # eV
 
 cathode = assemblies.ZPlane(z=1e-10, zsign=-1, V=0, T=T_cathode,
@@ -198,5 +199,4 @@ diag_base.TextDiag(diag_steps=diag_steps, preset_string='perfdebug')
 ##################################
 # Simulation run
 #################################
-max_steps = 10
-sim.step(1)
+sim.step(max_steps)
