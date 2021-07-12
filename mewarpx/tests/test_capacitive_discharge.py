@@ -42,6 +42,8 @@ def test_capacitive_discharge_multigrid(capsys, name):
     DIAG_INTERVAL = DIAG_STEPS*DT
     VOLTAGE = 450.0
     D_CA = 0.067  # m
+    NX = 16
+    NZ = 128
     run = diode_setup.DiodeRun_V1(
         dim=dim,
         rz=use_rz,
@@ -53,10 +55,10 @@ def test_capacitive_discharge_multigrid(capsys, name):
         T_INERT=300.0,  # K
         PLASMA_DENSITY=2.56e14,  # m^-3
         T_ELEC=30000.0,  # K
-        NX=16,
-        NZ=128,
+        NX=NX,
+        NZ=NZ,
         # This gives equal spacing in x & z
-        PERIOD=D_CA * 16 / 128.0,
+        PERIOD=D_CA * NX / NZ,
         DT=DT,
         TOTAL_TIMESTEPS=10,
         DIAG_STEPS=DIAG_STEPS,
