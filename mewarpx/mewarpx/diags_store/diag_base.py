@@ -3,7 +3,7 @@ import logging
 import time
 
 import numpy as np
-#import psutil
+# import psutil
 
 from pywarpx import callbacks
 

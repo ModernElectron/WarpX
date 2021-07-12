@@ -167,7 +167,8 @@ sim.add_diagnostic(field_diag)
 # WarpX and mewarpx initialization
 ##########################
 
-mwxrun.init_run(simulation=sim)
+mwxrun.simulation = sim
+mwxrun.init_run()
 
 print('Set up simulation with')
 print('  dt = %.3e s' % DT)
