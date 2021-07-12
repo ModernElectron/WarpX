@@ -65,7 +65,7 @@ def change_to_warpxdir(wd):
     comm.Barrier()
 
     os.chdir(wd)
-    print("Change to working directory {}".format(os.getcwd()))
+    print(f"Change to working directory {os.getcwd()}")
 
     comm.Barrier()
 
@@ -81,7 +81,7 @@ def get_min_wmargin(array, margin=0.1):
 
     Returns:
         minwmargin (float): If min < 0, this is min*(1-margin). If min > 0, this
-            is min*(1+margin).
+        is min*(1+margin).
     """
     amin = np.min(array)
     return amin*(1.0 - np.sign(amin)*margin)
@@ -96,7 +96,7 @@ def get_max_wmargin(array, margin=0.1):
 
     Returns:
         maxwmargin (float): If max < 0, this is max*(1-margin). If max > 0, this
-            is max*(1+margin).
+        is max*(1+margin).
     """
     amax = np.max(array)
     return amax*(1.0 + np.sign(amax)*margin)
@@ -149,8 +149,8 @@ def test_df_vs_ref(testname, df, suffix=None, margin=0.1):
         return test_df_in_margin(testdf=df, refdf=refdf, margin=margin)
 
     else:
-        print(("Record file {} does not exist. Reference data frame "
-               "not loaded.").format(record_file))
+        print(f"Record file {record_file} does not exist. Reference data "
+              f"frame not loaded.")
         return False
 
 
@@ -177,13 +177,13 @@ def test_df_in_margin(testdf, refdf, margin=0.1):
         if not testmin >= get_min_wmargin(refdf[column], margin=margin):
             equal = False
             print(
-                ("Column {} with test min {} is not within a {} margin of "
-                 "reference min {}").format(
-                     column, testmin, margin, refdf[column].min()))
+                f"Column {column} with test min {testmin} is not within a "
+                f"{margin} margin of reference min {refdf[column].min()}"
+            )
         if not testmax <= get_max_wmargin(refdf[column], margin=margin):
             equal = False
             print(
-                ("Column {} with test max {} is not within a {} margin of "
-                 "reference max {}").format(
-                     column, testmax, margin, refdf[column].max()))
+                f"Column {column} with test max {testmax} is not within a "
+                f"{margin} margin of reference max {refdf[column].max()}"
+            )
     return equal

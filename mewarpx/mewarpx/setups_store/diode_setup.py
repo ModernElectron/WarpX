@@ -387,14 +387,14 @@ class DiodeRun_V1(object):
                 self.solver = poisson_pseudo_1d.PoissonSolverPseudo1D(
                     grid=self.grid
                 )
-                return
-            self.solver = picmi.ElectrostaticSolver(
-                grid=self.grid,
-                method='Multigrid',
-                required_precision=1e-6,
-                maximum_iterations=10000
-            )
-            # self.solver.self_fields_verbosity = 2 if self.NONINTERAC else 0
+            else:
+                self.solver = picmi.ElectrostaticSolver(
+                    grid=self.grid,
+                    method='Multigrid',
+                    required_precision=1e-6,
+                    maximum_iterations=10000
+                )
+                # self.solver.self_fields_verbosity = 2 if self.NONINTERAC else 0
 
     def init_conductors(self):
         raise NotImplementedError(

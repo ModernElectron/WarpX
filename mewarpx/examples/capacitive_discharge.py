@@ -49,7 +49,7 @@ zmin = 0.0
 xmax = D_CA / nz * nx
 zmax = D_CA
 
-number_per_cell_each_dim = [32, 16]
+number_per_cell_each_dim = [16, 32]
 
 DT = 1.0 / (400 * FREQ)
 

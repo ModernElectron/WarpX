@@ -4,18 +4,9 @@ Utility functions for mewarpx.
 import errno
 import inspect
 import os
-from pywarpx.picmi import constants
 
 from pywarpx import geometry
-
-# CONSTANTS - SI
-kb_J = constants.kb # J/K
-torr_SI = constants.torr_SI # 1 torr in Pa
-erg_SI = 1e-7 # 1 erg in J
-
-# CONSTANTS - CGS
-kb_cgs = kb_J / erg_SI # erg/K
-torr_cgs = torr_SI * 10 # 1 torr in dyne/cm^2
+from mewarpx import mwxconstants as constants
 
 # http://stackoverflow.com/questions/50499/in-python-how-do-i-get-the-path-and-name-of-the-file-t
 mewarpx_dir = os.path.dirname(os.path.abspath(
@@ -59,7 +50,8 @@ def mkdir_p(path):
 
 
 def ideal_gas_density(p, T):
-    """Calculate neutral gas density from the ideal gas law.
+    """Calculate neutral gas density (in 1/cm^3) from the ideal gas law using
+    pressure in Torr.
 
     Arguments:
         p (float): Gas pressure (Torr)
@@ -68,4 +60,4 @@ def ideal_gas_density(p, T):
     Returns:
         N (float): Number density of gas atoms/molecules (1/cm^3)
     """
-    return (p * torr_cgs) / (kb_cgs * T)
+    return (p * constants.torr_cgs) / (constants.kb_cgs * T)

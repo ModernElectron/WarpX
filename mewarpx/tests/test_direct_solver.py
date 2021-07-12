@@ -1,4 +1,4 @@
-"""Test full 1D diode run with diagnostics."""
+"""Test pseudo 1D diode run with the superLU solver."""
 import pytest
 import numpy as np
 import pandas
