@@ -5,7 +5,7 @@ import pandas
 
 from mewarpx import util as mwxutil
 
-def test_capacitive_discharge_multigrid():
+def test_direct_solver():
     name = "Direct_solver"
     dim = 2
 
