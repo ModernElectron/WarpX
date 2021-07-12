@@ -7,11 +7,8 @@ from mewarpx import util as mwxutil
 mwxutil.init_libwarpx(ndim=2, rz=False)
 
 from mewarpx.mwxrun import mwxrun
-<<<<<<< HEAD
-=======
 from mewarpx.poisson_pseudo_1d import PoissonSolverPseudo1D
 from mewarpx.mcc_wrapper import MCC
->>>>>>> 20e9a192de4a1ff40154caba571ea0c35c26c78d
 from mewarpx.diags_store import diag_base
 
 from pywarpx import picmi
@@ -19,14 +16,6 @@ import pywarpx
 from pywarpx import callbacks
 
 import numpy as np
-<<<<<<< HEAD
-import matplotlib.pyplot as plt
-import time
-
-import shutil
-import yt
-=======
->>>>>>> 20e9a192de4a1ff40154caba571ea0c35c26c78d
 
 constants = picmi.constants
 
