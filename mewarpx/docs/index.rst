@@ -12,8 +12,7 @@ Contents:
    :maxdepth: 2
 
    readme
-   mewarpx.diags_store
-   mewarpx.setups_store
+   mewarpx
 
 Indices and tables
 ==================
