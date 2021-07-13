@@ -55,6 +55,8 @@ sys.path.insert(0, cwd)
 
 import mewarpx
 
+print(f"This is the version here: {mewarpx.__version__}")
+
 # -- General configuration ---------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
