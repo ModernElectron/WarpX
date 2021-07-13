@@ -12,7 +12,7 @@ sphinx:
 build:
   image: latest
   apt_packages:
-    - libclang
+    - clang
     - cmake
 
 # Optionally set the version of Python and requirements required to build your docs
