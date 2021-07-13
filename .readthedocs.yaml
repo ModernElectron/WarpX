@@ -9,6 +9,12 @@ version: 2
 sphinx:
    configuration: mewarpx/docs/conf.py
 
+build:
+  image: latest
+  apt_packages:
+    - libclang
+    - cmake
+
 # Optionally set the version of Python and requirements required to build your docs
 python:
    version: 3.7
