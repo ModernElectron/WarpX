@@ -8,6 +8,7 @@ from minerva import util as minutil
 from pywarpx import picmi
 
 from mewarpx import assemblies, emission, mepicmi
+from mewarpx.poisson_pseudo_1d import PoissonSolverPseudo1D
 
 from mewarpx.mwxrun import mwxrun
 from mewarpx.diags_store import diag_base
@@ -20,7 +21,7 @@ constants = picmi.constants
 
 P_INERT = 2.0 # torr
 T_INERT = 300.0 # K
-torr_to_pascals = 133.322
+torr_to_pascals = 102325/760
 N_INERT = (P_INERT * torr_to_pascals) / (constants.kb * T_INERT) # m^-3
 
 D_CA = 1e-4 # m
@@ -42,7 +43,7 @@ ymax = D_CA
 number_per_cell_each_dim = [16, 16]
 
 TOTAL_TIME = 1.0e-9 # s
-DIAG_INTERVAL = 1.0e-10
+DIAG_INTERVAL = 1.0e-11
 DT = 1.0e-12 # s
 
 max_steps = int(TOTAL_TIME / DT)
@@ -51,7 +52,7 @@ diagnostic_intervals = '::%i' % diag_steps
 
 print('Setting up simulation with')
 print(' dt = %.3e s' % DT)
-print(' Total tine = %.3e s (%i timesteps)' % (TOTAL_TIME, max_steps))
+print(' Total time = %.3e s (%i timesteps)' % (TOTAL_TIME, max_steps))
 print(' Diag time = %.3e (%i timesteps)' % (DIAG_INTERVAL, diag_steps))
 
 #################################
@@ -126,9 +127,10 @@ grid = picmi.Cartesian2DGrid(
     warpx_potential_hi_z=V_bias,
 )
 
-solver = picmi.ElectrostaticSolver(
-    grid=grid, method='Multigrid', required_precision=1e-6
-)
+#solver = picmi.ElectrostaticSolver(
+#    grid=grid, method='Multigrid', required_precision=1e-6
+#)
+solver = PoissonSolverPseudo1D(grid=grid)
 
 ###################################
 # diagnostics
@@ -172,7 +174,8 @@ sim.add_species(
 
 sim.add_diagnostic(field_diag)
 
-mwxrun.init_run(simulation=sim)
+mwxrun.simulation = sim
+mwxrun.init_run()
 
 ######################################
 # Add ME emission
