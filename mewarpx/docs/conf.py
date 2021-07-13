@@ -27,8 +27,7 @@ class MyMock(MagicMock):
         return MagicMock()
 
 
-# MOCK_MODULES = ['pywarpx', 'pywarpx.picmi', 'warpx', 'libwarpx', 'mpi4py']
-MOCK_MODULES = []
+MOCK_MODULES = ['pywarpx', 'pywarpx.picmi', 'warpx', 'libwarpx', 'mpi4py']
 sys.modules.update((mod_name, MyMock()) for mod_name in MOCK_MODULES)
 
 # Have to specially handle classes that inherit from Mocked modules, in this
