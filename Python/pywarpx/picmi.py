@@ -749,6 +749,28 @@ class MCCCollisions(object):
                     val = val.name
                 collision.add_new_attr(process+'_'+key, val)
 
+class EmbeddedBoundary(object):
+    """Custom class to handle set up of embedded boundaries in WarpX"""
+
+    def __init__(self, geom_type, box_lo=None, box_hi=None,
+                 box_has_fluid_inside=None):
+        self.geom_type = geom_type
+        self.box_lo = box_lo
+        self.box_hi = box_hi
+        self.box_has_fluid_inside = box_has_fluid_inside
+
+    def initialize_inputs(self):
+        boundary = pywarpx.Boundary.newboundary(self.geom_type)
+        if self.geom_type == "box":
+            assert self.box_lo is not None, Exception("attempted to initialize 'box' embedded boundary but box_lo was None.")
+            assert self.box_hi is not None, Exception("attempted to initialize 'box' embedded boundary but box_hi was None.")
+            assert self.box_has_fluid_inside is not None, Exception("attempted to initialize 'box' embedded boundary but box_has_fluid_inside was None.")
+
+            boundary.box_lo = self.box_lo
+            boundary.box_hi = self.box_hi
+            boundary.box_has_fluid_inside = self.box_has_fluid_inside
+        # elif other geometries
+
 
 class Simulation(picmistandard.PICMI_Simulation):
     def init(self, kw):
