@@ -34,8 +34,8 @@ sys.modules.update((mod_name, MyMock()) for mod_name in MOCK_MODULES)
 # Have to specially handle classes that inherit from Mocked modules, in this
 # case PoissonSolver1D. See also
 # https://stackoverflow.com/questions/25893614/autodoc-a-class-that-extends-a-mocked-class
-sys.modules['pywarpx'].FieldSolver = object
-sys.modules['pywarpx'].Species = object
+# sys.modules['pywarpx'].FieldSolver = object
+# sys.modules['pywarpx'].Species = object
 
 # If extensions (or modules to document with autodoc) are in another
 # directory, add these directories to sys.path here. If the directory is
