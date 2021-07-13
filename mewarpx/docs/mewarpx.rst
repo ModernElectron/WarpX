@@ -10,6 +10,16 @@ Subpackages
    mewarpx.diags_store
    mewarpx.setups_store
 
+
+Module contents
+---------------
+
+.. automodule:: mewarpx
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
 Submodules
 ----------
 
@@ -45,10 +55,3 @@ mewarpx.util module
    :undoc-members:
    :show-inheritance:
 
-Module contents
----------------
-
-.. automodule:: mewarpx
-   :members:
-   :undoc-members:
-   :show-inheritance:
