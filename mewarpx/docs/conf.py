@@ -51,7 +51,7 @@ project_root = os.path.abspath("./../..")
 # This lets us ensure that the source package is imported, and that its
 # version is used.
 sys.path.insert(0, cwd)
-sys.path.insert(1, project_root)
+# sys.path.insert(1, project_root)
 
 import mewarpx
 
