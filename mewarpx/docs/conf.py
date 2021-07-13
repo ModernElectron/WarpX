@@ -43,14 +43,15 @@ sys.modules['pywarpx'].Species = object
 # sys.path.insert(0, os.path.abspath('.'))
 
 # Get the project root dir, which is the parent dir of this
-cwd = os.getcwd()
+cwd = os.path.abspath(os.getcwd)
 # project_root = os.path.dirname(cwd)
-project_root = os.path.abspath("..")
+project_root = os.path.abspath("./..")
 
 # Insert the project root dir as the first element in the PYTHONPATH.
 # This lets us ensure that the source package is imported, and that its
 # version is used.
-sys.path.insert(0, project_root)
+sys.path.insert(0, cwd)
+sys.path.insert(1, project_root)
 
 import mewarpx
 
