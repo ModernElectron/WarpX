@@ -13,9 +13,6 @@ Contents:
 
    readme
    mewarpx
-   modules
-   mewarpx.diags_store
-   mewarpx.setups_store
 
 Indices and tables
 ==================
