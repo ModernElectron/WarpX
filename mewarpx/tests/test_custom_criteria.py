@@ -18,10 +18,10 @@ def add_particles():
     [
         'Run2D',
         # 'Run2D_RZ',
-        'Run3D'
+        # 'Run3D'
     ]
 )
-def test_capacitive_discharge_multigrid(capsys, name):
+def test_capacitive_discharge_custom_criteria(capsys, name):
     basename = "Run"
     use_rz = 'RZ' in name
     dim = int(name.replace(basename, '')[0])
@@ -107,4 +107,4 @@ def test_capacitive_discharge_multigrid(capsys, name):
 
 
 if __name__ == '__main__':
-    test_capacitive_discharge_multigrid(None, "Run2D")
+    test_capacitive_discharge_custom_criteria(None, "Run2D")
