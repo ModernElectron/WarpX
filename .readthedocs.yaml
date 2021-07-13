@@ -15,4 +15,4 @@ python:
    install:
    - requirements: mewarpx/docs/requirements.txt
    - method: setuptools
-   - path: mewarpx
+     path: mewarpx
