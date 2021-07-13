@@ -47,7 +47,7 @@ setuptools.setup(
         "A set of tools for running and postprocessing WarpX simulations with "
         "additional thermionic-related capabilities."
     ),
-    long_description=open('README.rst').read(),
+    long_description=open(os.path.join(here, 'README.rst')).read(),
 
     packages=setuptools_packages,
 
