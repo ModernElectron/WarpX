@@ -18,3 +18,17 @@ python:
       path: mewarpx
       extra_requirements:
       - docs
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# original file for WarpX
+
+# # Copyright 2019-2020 Axel Huebl, Maxence Thevenet
+# #
+# # This file is part of WarpX.
+# #
+# # License: BSD-3-Clause-LBNL
+
+# requirements_file: Docs/requirements.txt
+
+# formats:
