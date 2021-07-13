@@ -27,7 +27,7 @@ class MyMock(MagicMock):
         return MagicMock()
 
 
-MOCK_MODULES = ['pywarpx', 'pywarpx.picmi', 'warpx', 'libwarpx']
+MOCK_MODULES = ['pywarpx', 'pywarpx.picmi', 'warpx', 'libwarpx', 'mpi4py']
 sys.modules.update((mod_name, MyMock()) for mod_name in MOCK_MODULES)
 
 # Have to specially handle classes that inherit from Mocked modules, in this
@@ -44,7 +44,8 @@ sys.modules['pywarpx'].Species = object
 
 # Get the project root dir, which is the parent dir of this
 cwd = os.getcwd()
-project_root = os.path.dirname(cwd)
+# project_root = os.path.dirname(cwd)
+project_root = os.path.abspath("..")
 
 # Insert the project root dir as the first element in the PYTHONPATH.
 # This lets us ensure that the source package is imported, and that its
