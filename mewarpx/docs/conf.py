@@ -43,7 +43,7 @@ sys.modules['pywarpx'].Species = object
 # sys.path.insert(0, os.path.abspath('.'))
 
 # Get the project root dir, which is the parent dir of this
-cwd = os.path.abspath(os.getcwd)
+cwd = os.path.abspath(".")
 # project_root = os.path.dirname(cwd)
 project_root = os.path.abspath("./..")
 
