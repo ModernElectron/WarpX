@@ -1,6 +1,5 @@
 matplotlib==3.2.2
 matplotlib-inline==0.1.2
--e git+https://github.com/ModernElectron/WarpX@801a4db1ee401e3893e3fdf6477e5e5c9e8fed3f#egg=mewarpx&subdirectory=mewarpx
 mock==4.0.3
 numpy==1.21.
 scipy==1.7.0
