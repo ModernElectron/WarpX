@@ -17,10 +17,11 @@ build:
 
 # Optionally set the version of Python and requirements required to build your docs
 python:
-   version: 3.8
-   install:
+  version: 3.8
+  install:
   #  - requirements: mewarpx/requirements.txt
-   - method: pip
-     path: mewarpx
-     extra_requirements:
+    - method: pip
+      path: mewarpx
+      extra_requirements:
       - docs
+  system_packages: true
