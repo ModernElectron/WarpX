@@ -284,8 +284,6 @@ WarpX::computePhiCartesian (const amrex::Vector<std::unique_ptr<amrex::MultiFab>
                             int const verbosity) const
 {
 
-#ifndef AMREX_USE_EB
-    // Without embedded boundaries: set potential at the box boundary
     Array<LinOpBCType,AMREX_SPACEDIM> lobc, hibc;
     std::array<bool,AMREX_SPACEDIM> dirichlet_flag;
     Array<amrex::Real,AMREX_SPACEDIM> phi_bc_values_lo, phi_bc_values_hi;
@@ -315,6 +313,8 @@ WarpX::computePhiCartesian (const amrex::Vector<std::unique_ptr<amrex::MultiFab>
     }
     setPhiBC(phi, dirichlet_flag, phi_bc_values_lo, phi_bc_values_hi);
 
+#ifndef AMREX_USE_EB
+    // Without embedded boundaries: set potential at the box boundary
     // Define the linear operator (Poisson operator)
     MLNodeTensorLaplacian linop( Geom(), boxArray(), DistributionMap() );
 
@@ -326,9 +326,6 @@ WarpX::computePhiCartesian (const amrex::Vector<std::unique_ptr<amrex::MultiFab>
         {{ beta[0], beta[1], beta[2] }};
 #   endif
     linop.setBeta( beta_solver );
-
-    // Solve the Poisson equation
-    linop.setDomainBC( lobc, hibc );
 
 #else
 
@@ -345,6 +342,9 @@ WarpX::computePhiCartesian (const amrex::Vector<std::unique_ptr<amrex::MultiFab>
     linop.setSigma({AMREX_D_DECL(1.0, 1.0, 1.0)});
     linop.setEBDirichlet(0.);
 #endif
+
+    // Set domain boundary conditions
+    linop.setDomainBC( lobc, hibc );
 
     for (int lev=0; lev < rho.size(); lev++){
         rho[lev]->mult(-1._rt/PhysConst::ep0);
