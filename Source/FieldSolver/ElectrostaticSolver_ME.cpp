@@ -8,9 +8,12 @@
 #include <AMReX_ParallelDescriptor.H>
 #include <AMReX_MLMG.H>
 #ifdef WARPX_DIM_RZ
-#include <AMReX_MLNodeLaplacian.H>
+#    include <AMReX_MLNodeLaplacian.H>
 #else
-#include <AMReX_MLNodeTensorLaplacian.H>
+#    include <AMReX_MLNodeTensorLaplacian.H>
+#    ifdef AMREX_USE_EB
+#        include <AMReX_MLEBNodeFDLaplacian.H>
+#    endif
 #endif
 #include <AMReX_REAL.H>
 
@@ -281,7 +284,8 @@ WarpX::computePhiCartesian (const amrex::Vector<std::unique_ptr<amrex::MultiFab>
                             int const verbosity) const
 {
 
-    // Define the boundary conditions
+#ifndef AMREX_USE_EB
+    // Without embedded boundaries: set potential at the box boundary
     Array<LinOpBCType,AMREX_SPACEDIM> lobc, hibc;
     std::array<bool,AMREX_SPACEDIM> dirichlet_flag;
     Array<amrex::Real,AMREX_SPACEDIM> phi_bc_values_lo, phi_bc_values_hi;
@@ -309,8 +313,6 @@ WarpX::computePhiCartesian (const amrex::Vector<std::unique_ptr<amrex::MultiFab>
             );
         }
     }
-
-    // set the boundary potential values if needed
     setPhiBC(phi, dirichlet_flag, phi_bc_values_lo, phi_bc_values_hi);
 
     // Define the linear operator (Poisson operator)
@@ -318,15 +320,31 @@ WarpX::computePhiCartesian (const amrex::Vector<std::unique_ptr<amrex::MultiFab>
 
     // Set the value of beta
     amrex::Array<amrex::Real,AMREX_SPACEDIM> beta_solver =
-#if (AMREX_SPACEDIM==2)
+#   if (AMREX_SPACEDIM==2)
         {{ beta[0], beta[2] }};  // beta_x and beta_z
-#else
+#   else
         {{ beta[0], beta[1], beta[2] }};
-#endif
+#   endif
     linop.setBeta( beta_solver );
 
     // Solve the Poisson equation
     linop.setDomainBC( lobc, hibc );
+
+#else
+
+    // With embedded boundary: extract EB info
+    LPInfo info;
+    Vector<EBFArrayBoxFactory const*> eb_factory;
+    eb_factory.resize(max_level+1);
+    for (int lev = 0; lev <= max_level; ++lev) {
+      eb_factory[lev] = &WarpX::fieldEBFactory(lev);
+    }
+    MLEBNodeFDLaplacian linop( Geom(), boxArray(), dmap, info, eb_factory);
+
+    // TODO: Modify this
+    linop.setSigma({AMREX_D_DECL(1.0, 1.0, 1.0)});
+    linop.setEBDirichlet(0.);
+#endif
 
     for (int lev=0; lev < rho.size(); lev++){
         rho[lev]->mult(-1._rt/PhysConst::ep0);
