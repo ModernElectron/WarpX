@@ -33,6 +33,7 @@ class constants:
     m_p = 1.67262192369e-27
     hbar = 1.054571817e-34
     kb = 1.380649e-23
+    torr_SI = 133.322368421
 
 picmistandard.register_constants(constants)
 
@@ -82,6 +83,7 @@ class Species(picmistandard.PICMI_Species):
         # For the relativistic electrostatic solver
         self.self_fields_required_precision = kw.pop('warpx_self_fields_required_precision', None)
         self.self_fields_max_iters = kw.pop('warpx_self_fields_max_iters', None)
+        self.self_fields_verbosity = kw.pop('warpx_self_fields_verbosity', None)
 
     def initialize_inputs(self, layout,
                           initialize_self_fields = False,
@@ -104,7 +106,8 @@ class Species(picmistandard.PICMI_Species):
                                              initialize_self_fields = int(initialize_self_fields),
                                              boost_adjust_transverse_positions = self.boost_adjust_transverse_positions,
                                              self_fields_required_precision = self.self_fields_required_precision,
-                                             self_fields_max_iters = self.self_fields_max_iters)
+                                             self_fields_max_iters = self.self_fields_max_iters,
+                                             self_fields_verbosity = self.self_fields_verbosity)
         pywarpx.Particles.particles_list.append(self.species)
 
         if self.initial_distribution is not None:
@@ -532,7 +535,6 @@ class ElectromagneticSolver(picmistandard.PICMI_ElectromagneticSolver):
             self.psatd_current_correction = kw.pop('warpx_current_correction', None)
             self.psatd_update_with_rho = kw.pop('warpx_psatd_update_with_rho', None)
             self.psatd_do_time_averaging = kw.pop('warpx_psatd_do_time_averaging', None)
-            self.psatd_use_damp_fields_in_z_guard = kw.pop('warpx_use_damp_fields_in_z_guard', None)
 
     def initialize_inputs(self):
 
@@ -548,7 +550,6 @@ class ElectromagneticSolver(picmistandard.PICMI_ElectromagneticSolver):
             pywarpx.psatd.current_correction = self.psatd_current_correction
             pywarpx.psatd.update_with_rho = self.psatd_update_with_rho
             pywarpx.psatd.do_time_averaging = self.psatd_do_time_averaging
-            pywarpx.psatd.use_damp_fields_in_z_guard = self.psatd_use_damp_fields_in_z_guard
 
             if self.grid.guard_cells is not None:
                 pywarpx.psatd.nx_guard = self.grid.guard_cells[0]
@@ -580,7 +581,7 @@ class ElectromagneticSolver(picmistandard.PICMI_ElectromagneticSolver):
 class ElectrostaticSolver(picmistandard.PICMI_ElectrostaticSolver):
     def init(self, kw):
         self.relativistic = kw.pop('warpx_relativistic', False)
-
+        self.self_fields_verbosity = kw.pop('warpx_self_fields_verbosity', None)
     def initialize_inputs(self):
 
         self.grid.initialize_inputs()
@@ -591,6 +592,7 @@ class ElectrostaticSolver(picmistandard.PICMI_ElectrostaticSolver):
             pywarpx.warpx.do_electrostatic = 'labframe'
             pywarpx.warpx.self_fields_required_precision = self.required_precision
             pywarpx.warpx.self_fields_max_iters = self.maximum_iterations
+            pywarpx.warpx.self_fields_verbosity = self.self_fields_verbosity
             pywarpx.boundary.potential_lo_x = self.grid.potential_xmin
             pywarpx.boundary.potential_lo_y = self.grid.potential_ymin
             pywarpx.boundary.potential_lo_z = self.grid.potential_zmin
@@ -764,6 +766,7 @@ class Simulation(picmistandard.PICMI_Simulation):
         self.costs_heuristic_particles_wt = kw.pop('warpx_costs_heuristic_particles_wt', None)
         self.costs_heuristic_cells_wt = kw.pop('warpx_costs_heuristic_cells_wt', None)
         self.use_fdtd_nci_corr = kw.pop('warpx_use_fdtd_nci_corr', None)
+        self.amr_check_input = kw.pop('warpx_amr_check_input', None)
 
         self.collisions = kw.pop('warpx_collisions', None)
 
@@ -803,6 +806,8 @@ class Simulation(picmistandard.PICMI_Simulation):
 
         pywarpx.particles.use_fdtd_nci_corr = self.use_fdtd_nci_corr
 
+        pywarpx.amr.check_input = self.amr_check_input
+
         particle_shape = self.particle_shape
         for s in self.species:
             if s.particle_shape is not None:
@@ -841,12 +846,12 @@ class Simulation(picmistandard.PICMI_Simulation):
         for diagnostic in self.diagnostics:
             diagnostic.initialize_inputs()
 
-    def initialize_warpx(self):
+    def initialize_warpx(self, mpi_comm=None):
         if self.warpx_initialized:
             return
 
         self.warpx_initialized = True
-        pywarpx.warpx.init()
+        pywarpx.warpx.init(mpi_comm)
 
     def write_input_file(self, file_name='inputs'):
         self.initialize_inputs()
@@ -857,9 +862,9 @@ class Simulation(picmistandard.PICMI_Simulation):
             kw['stop_time'] = self.max_time
         pywarpx.warpx.write_inputs(file_name, **kw)
 
-    def step(self, nsteps=None):
+    def step(self, nsteps=None, mpi_comm=None):
         self.initialize_inputs()
-        self.initialize_warpx()
+        self.initialize_warpx(mpi_comm)
         if nsteps is None:
             if self.max_steps is not None:
                 nsteps = self.max_steps

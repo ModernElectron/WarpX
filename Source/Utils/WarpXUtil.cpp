@@ -534,11 +534,11 @@ void ReadBCParams ()
 
     for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
         // Get field boundary type
-        WarpX::field_boundary_lo[idim] = GetBCTypeInteger(field_BC_lo[idim], true);
-        WarpX::field_boundary_hi[idim] = GetBCTypeInteger(field_BC_hi[idim], true);
+        WarpX::field_boundary_lo[idim] = GetFieldBCTypeInteger(field_BC_lo[idim]);
+        WarpX::field_boundary_hi[idim] = GetFieldBCTypeInteger(field_BC_hi[idim]);
         // Get particle boundary type
-        WarpX::particle_boundary_lo[idim] = GetBCTypeInteger(particle_BC_lo[idim], false);
-        WarpX::particle_boundary_hi[idim] = GetBCTypeInteger(particle_BC_hi[idim], false);
+        WarpX::particle_boundary_lo[idim] = GetParticleBCTypeInteger(particle_BC_lo[idim]);
+        WarpX::particle_boundary_hi[idim] = GetParticleBCTypeInteger(particle_BC_hi[idim]);
 
         if (WarpX::field_boundary_lo[idim] == FieldBoundaryType::Periodic ||
             WarpX::field_boundary_hi[idim] == FieldBoundaryType::Periodic ||
@@ -566,6 +566,38 @@ void ReadBCParams ()
                 WarpX::field_boundary_hi[idim] == FieldBoundaryType::PEC) {
                 amrex::Abort(" PEC boundary not implemented for PSATD, yet!");
             }
+        }
+    }
+    // temporarily check : If silver mueller is selected for one boundary, it should be
+    // selected at all valid boundaries.
+    for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
+        if (WarpX::field_boundary_lo[idim] == FieldBoundaryType::Absorbing_SilverMueller ||
+            WarpX::field_boundary_hi[idim] == FieldBoundaryType::Absorbing_SilverMueller){
+#if (AMREX_SPACEDIM == 3)
+            AMREX_ALWAYS_ASSERT_WITH_MESSAGE(
+                (WarpX::field_boundary_lo[0] == FieldBoundaryType::Absorbing_SilverMueller)&&
+                (WarpX::field_boundary_hi[0] == FieldBoundaryType::Absorbing_SilverMueller)&&
+                (WarpX::field_boundary_lo[1] == FieldBoundaryType::Absorbing_SilverMueller)&&
+                (WarpX::field_boundary_hi[1] == FieldBoundaryType::Absorbing_SilverMueller)&&
+                (WarpX::field_boundary_lo[2] == FieldBoundaryType::Absorbing_SilverMueller)&&
+                (WarpX::field_boundary_hi[2] == FieldBoundaryType::Absorbing_SilverMueller)
+                , " The current implementation requires silver-mueller boundary condition to be applied at all boundaries!");
+#else
+#ifndef WARPX_DIM_RZ
+            AMREX_ALWAYS_ASSERT_WITH_MESSAGE(
+                (WarpX::field_boundary_lo[0] == FieldBoundaryType::Absorbing_SilverMueller)&&
+                (WarpX::field_boundary_hi[0] == FieldBoundaryType::Absorbing_SilverMueller)&&
+                (WarpX::field_boundary_lo[1] == FieldBoundaryType::Absorbing_SilverMueller)&&
+                (WarpX::field_boundary_hi[1] == FieldBoundaryType::Absorbing_SilverMueller)
+                , " The current implementation requires silver-mueller boundary condition to be applied at all boundaries!");
+#else
+            AMREX_ALWAYS_ASSERT_WITH_MESSAGE(
+                (WarpX::field_boundary_hi[0] == FieldBoundaryType::Absorbing_SilverMueller)&&
+                (WarpX::field_boundary_lo[1] == FieldBoundaryType::Absorbing_SilverMueller)&&
+                (WarpX::field_boundary_hi[1] == FieldBoundaryType::Absorbing_SilverMueller)
+                , " The current implementation requires silver-mueller boundary condition to be applied at all boundaries!");
+#endif
+#endif
         }
     }
 #ifdef WARPX_DIM_RZ

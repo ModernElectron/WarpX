@@ -94,6 +94,11 @@ Overall simulation parameters
     ``self_fields_required_precision``, this parameter may be increased.
     This only applies when warpx.do_electrostatic = labframe.
 
+* ``warpx.self_fields_verbosity`` (`integer`, default: 2)
+    The vebosity used for MLMG solver for space-charge fields calculation. Currently
+    MLMG solver looks for verbosity levels from 0-5. A higher number results in more
+    verbose output.
+
 * ``amrex.abort_on_out_of_gpu_memory``  (``0`` or ``1``; default is ``1`` for true)
     When running on GPUs, memory that does not fit on the device will be automatically swapped to host memory when this option is set to ``0``.
     This will cause severe performance drops.
@@ -150,6 +155,12 @@ Setting up the field mesh
 * ``warpx.moving_window_v`` (`float`)
     The speed of moving window, in units of the speed of light
     (i.e. use ``1.0`` for a moving window that moves exactly at the speed of light)
+
+* ``warpx.start_moving_window_step`` (`integer`; 0 by default)
+    The timestep at which the moving window starts.
+
+* ``warpx.end_moving_window_step`` (`integer`; default is ``-1`` for false)
+    The timestep at which the moving window ends.
 
 * ``warpx.fine_tag_lo`` and ``warpx.fine_tag_hi`` (`2 floats in 2D`, `3 floats in 3D`; in meters) optional
     **When using static mesh refinement with 1 level**, the extent of the refined patch.
@@ -213,6 +224,8 @@ Domain Boundary Conditions
     * ``pml`` (default): This option can be used to add Perfectly Matched Layers (PML) around the simulation domain. It will override the user-defined value provided for ``warpx.do_pml``. See the :ref:`PML theory section <theory-bc>` for more details.
     Additional pml algorithms can be explored using the parameters ``warpx.do_pml_in_domain``, ``warpx.do_particles_in_pml``, and ``warpx.do_pml_j_damping``.
 
+    * ``absorbing_silver_mueller``: This option can be used to set the Silver-Mueller absorbing boundary conditions. These boundary conditions are simpler and less computationally expensive than the pml, but are also less effective at absorbing the field. They only work with the Yee Maxwell solver.
+
     * ``damped``: This is the recommended option in the moving direction when using the spectral solver with moving window (currently only supported along z). This boundary condition applies a damping factor to the electric and magnetic fields in the outer half of the guard cells, using a sine squared profile. As the spectral solver is by nature periodic, the damping prevents fields from wrapping around to the other end of the domain when the periodicity is not desired. This boundary condition is only valid when using the spectral solver.
 
     * ``pec``: This option can be used to set a Perfect Electric Conductor at the simulation boundary. For the electromagnetic solve, at PEC, the tangential electric field and the normal magnetic field are set to 0. This boundary can be used to model a dielectric or metallic surface. In the guard-cell region, the tangential electric field is set equal and opposite to the respective field component in the mirror location across the PEC boundary, and the normal electric field is set equal to the field component in the mirror location in the domain across the PEC boundary. Similarly, the tangential (and normal) magnetic field components are set equal (and opposite) to the respective magnetic field components in the mirror locations across the PEC boundary. Note that PEC boundary is invalid at `r=0` for the RZ solver. Please use ``none`` option. This boundary condition does not work with the spectral solver.
@@ -223,6 +236,11 @@ If an electrostatic field solve is used the boundary potentials can also be set 
 * ``boundary.particle_lo`` and ``boundary.particle_hi`` (`2 strings` for 2D, `3 strings` for 3D)
     Options are:
     * ``Periodic``: Particles leaving the boundary will re-enter from the opposite boundary. The field boundary condition must be consistenly set to periodic and both lower and upper boundaries must be periodic.
+    * ``Reflecting``: Particles leaving the boundary are reflected from the boundary back into the domain. When
+    ``boundary.reflect_all_velocities`` is false, the sign of only the normal velocity is changed, otherwise the sign of all velocities are changed.
+
+* ``boundary.reflect_all_velocities`` (`bool`) optional (default `false`)
+    For a reflecting boundary condition, this flags whether the sign of only the normal velocity is changed or all velocities.
 
 .. _running-cpp-parameters-parallelization:
 
@@ -403,11 +421,6 @@ Particle initialization
     Whether to activate the FDTD Numerical Cherenkov Instability corrector.
     Not currently available in the RZ configuration.
 
-* ``particles.boundary_conditions`` (`string`) optional (default `none`)
-    Boundary conditions applied to particles. Options are:
-    * ``none``: the boundary conditions applied to particles is determined by ``geometry.is_periodic``.
-    * ``absorbing``: particles exiting the simulation domain are discarded.
-
 * ``particles.rigid_injected_species`` (`strings`, separated by spaces)
     List of species injected using the rigid injection method. The rigid injection
     method is useful when injecting a relativistic particle beam, in boosted-frame
@@ -503,6 +516,10 @@ Particle initialization
     within a cell. Note that for RZ, the three axis are radius, theta, and z and that the recommended
     number of particles per theta is at least two times the number of azimuthal modes requested.
     (It is recommended to do a convergence scan of the number of particles per theta)
+
+* ``<species_name>.random_theta`` (`bool`) optional (default `1`)
+    When using RZ geometry, whether to randomize the azimuthal position of particles.
+    This is used when ``<species_name>.injection_style = NUniformPerCell``.
 
 * ``<species_name>.do_splitting`` (`bool`) optional (default `0`)
     Split particles of the species when crossing the boundary from a lower
@@ -1154,8 +1171,7 @@ Plasma Science, vol. 19, no. 2, pp. 65-85, 1991) <https://ieeexplore.ieee.org/do
     `Perez et al. (Phys. Plasmas 19, 083104, 2012) <https://doi.org/10.1063/1.4742167>`_.
 
 * ``<collision_name>.ndt`` (`int`) optional
-    Only for ``pairwisecoulomb``. Execute collision every # time steps.
-    The default value is 1.
+    Execute collision every # time steps. The default value is 1.
 
 * ``<collision_name>.background_density`` (`float`)
     Only for ``background_mcc``. The density of the neutral background gas in :math:`m^{-3}`.
