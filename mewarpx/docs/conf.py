@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# metools documentation build configuration file
+# mewarpx documentation build configuration file
 # Template created by sphinx-quickstart on Tue Jul  9 22:26:36 2013.
 #
 # This file is execfile()d with the current directory set to its
@@ -290,7 +290,7 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    ('index', 'metools',
+    ('index', 'mewarpx',
      u'Modern Electron WarpX Tools Documentation',
      u'Modern Electron',
      'mewarpx',

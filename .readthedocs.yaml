@@ -1,0 +1,19 @@
+# .readthedocs.yaml
+# Read the Docs configuration file
+# This file is for configuring readthedocs for MEWarpX
+
+# Required
+version: 2
+
+# Build documentation in the docs/ directory with Sphinx
+sphinx:
+   configuration: mewarpx/docs/conf.py
+
+# Optionally set the version of Python and requirements required to build your docs
+python:
+   version: 3.7
+   install:
+   - method: pip
+   - requirements: mewarpx/docs/requirements.txt
+   - method: setuptools
+   - path: mewarpx
