@@ -92,10 +92,14 @@ std::string WarpX::str_Ey_ext_grid_function;
 std::string WarpX::str_Ez_ext_grid_function;
 
 int WarpX::do_moving_window = 0;
+int WarpX::start_moving_window_step = 0;
+int WarpX::end_moving_window_step = -1;
 int WarpX::moving_window_dir = -1;
 Real WarpX::moving_window_v = std::numeric_limits<amrex::Real>::max();
 
 bool WarpX::fft_do_time_averaging = false;
+
+amrex::IntVect WarpX::fill_guards = amrex::IntVect(0);
 
 Real WarpX::quantum_xi_c2 = PhysConst::xi_c2;
 Real WarpX::gamma_boost = 1._rt;
@@ -116,8 +120,8 @@ int WarpX::em_solver_medium;
 int WarpX::macroscopic_solver_algo;
 amrex::Vector<int> WarpX::field_boundary_lo(AMREX_SPACEDIM,0);
 amrex::Vector<int> WarpX::field_boundary_hi(AMREX_SPACEDIM,0);
-amrex::Vector<int> WarpX::particle_boundary_lo(AMREX_SPACEDIM,0);
-amrex::Vector<int> WarpX::particle_boundary_hi(AMREX_SPACEDIM,0);
+amrex::Vector<ParticleBoundaryType> WarpX::particle_boundary_lo(AMREX_SPACEDIM,ParticleBoundaryType::Absorbing);
+amrex::Vector<ParticleBoundaryType> WarpX::particle_boundary_hi(AMREX_SPACEDIM,ParticleBoundaryType::Absorbing);
 
 bool WarpX::do_current_centering = false;
 
@@ -170,6 +174,7 @@ bool WarpX::do_dynamic_scheduling = true;
 int WarpX::do_electrostatic;
 Real WarpX::self_fields_required_precision = 1.e-11_rt;
 int WarpX::self_fields_max_iters = 200;
+int WarpX::self_fields_verbosity = 2;
 
 int WarpX::do_subcycling = 0;
 int WarpX::do_multi_J = 0;
@@ -262,7 +267,9 @@ WarpX::WarpX ()
     F_fp.resize(nlevs_max);
     G_fp.resize(nlevs_max);
     rho_fp.resize(nlevs_max);
+    full_rho_fp.resize(nlevs_max);
     phi_fp.resize(nlevs_max);
+    full_phi_fp.resize(nlevs_max);
     current_fp.resize(nlevs_max);
     Efield_fp.resize(nlevs_max);
     Bfield_fp.resize(nlevs_max);
@@ -478,6 +485,8 @@ WarpX::ReadParameters ()
         pp_warpx.query("do_moving_window", do_moving_window);
         if (do_moving_window)
         {
+            pp_warpx.query("start_moving_window_step", start_moving_window_step);
+            pp_warpx.query("end_moving_window_step", end_moving_window_step);
             std::string s;
             pp_warpx.get("moving_window_dir", s);
             if (s == "x" || s == "X") {
@@ -549,6 +558,7 @@ WarpX::ReadParameters ()
         if (do_electrostatic == ElectrostaticSolverAlgo::LabFrame) {
             queryWithParser(pp_warpx, "self_fields_required_precision", self_fields_required_precision);
             pp_warpx.query("self_fields_max_iters", self_fields_max_iters);
+            pp_warpx.query("self_fields_verbosity", self_fields_verbosity);
             // Note that with the relativistic version, these parameters would be
             // input for each species.
         }
@@ -634,11 +644,26 @@ WarpX::ReadParameters ()
             quantum_xi_c2 = static_cast<amrex::Real>(quantum_xi * PhysConst::c * PhysConst::c);
         }
 
-        pp_warpx.query("do_pml", do_pml);
-        pp_warpx.query("do_silver_mueller", do_silver_mueller);
-        if ( (do_pml==1)&&(do_silver_mueller==1) ) {
-            amrex::Abort("PML and Silver-Mueller boundary conditions cannot be activated at the same time.");
+        for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
+            if ( ( WarpX::field_boundary_lo[idim] == FieldBoundaryType::PML &&
+                   WarpX::field_boundary_lo[idim] == FieldBoundaryType::Absorbing_SilverMueller ) ||
+                 ( WarpX::field_boundary_hi[idim] == FieldBoundaryType::PML &&
+                   WarpX::field_boundary_hi[idim] == FieldBoundaryType::Absorbing_SilverMueller ) )
+            {
+                amrex::Abort("PML and Silver-Mueller boundary conditions cannot be activated at the same time.");
+            }
+
+            if (WarpX::field_boundary_lo[idim] == FieldBoundaryType::Absorbing_SilverMueller ||
+                WarpX::field_boundary_hi[idim] == FieldBoundaryType::Absorbing_SilverMueller)
+            {
+                // SilverMueller is implemented for Yee
+                if (maxwell_solver_id != MaxwellSolverAlgo::Yee) {
+                    amrex::Abort("The Silver-Mueller boundary condition can only be used with the Yee solver.");
+                }
+            }
         }
+
+        pp_warpx.query("do_pml", do_pml);
         pp_warpx.query("pml_ncell", pml_ncell);
         pp_warpx.query("pml_delta", pml_delta);
         pp_warpx.query("pml_has_particles", pml_has_particles);
@@ -869,7 +894,7 @@ WarpX::ReadParameters ()
         std::vector<std::string> lasers_names;
         pp_lasers.queryarr("names", lasers_names);
 
-        if (species_names.size() > 0 || lasers_names.size() > 0) {
+        if (!species_names.empty() || !lasers_names.empty()) {
             int particle_shape;
             if (pp_algo.query("particle_shape", particle_shape) == false)
             {
@@ -1083,6 +1108,18 @@ WarpX::ReadParameters ()
                 "field boundary in both lo and hi must be set to Damped for PSATD"
             );
         }
+
+        // Whether to fill the guard cells with inverse FFTs:
+        // WarpX::fill_guards = amrex::IntVect(0) by default,
+        // except for non-periodic directions with damping.
+        for (int dir = 0; dir < AMREX_SPACEDIM; dir++)
+        {
+            if (WarpX::field_boundary_lo[dir] == FieldBoundaryType::Damped ||
+                WarpX::field_boundary_hi[dir] == FieldBoundaryType::Damped)
+            {
+                WarpX::fill_guards[dir] = 1;
+            }
+        }
     }
 
     if (maxwell_solver_id != MaxwellSolverAlgo::PSATD ) {
@@ -1276,7 +1313,9 @@ WarpX::ClearLevel (int lev)
     F_fp  [lev].reset();
     G_fp  [lev].reset();
     rho_fp[lev].reset();
+    full_rho_fp[lev].reset();
     phi_fp[lev].reset();
+    full_phi_fp[lev].reset();
     F_cp  [lev].reset();
     G_cp  [lev].reset();
     rho_cp[lev].reset();
@@ -1487,6 +1526,19 @@ WarpX::AllocLevelMFs (int lev, const BoxArray& ba, const DistributionMapping& dm
     if (deposit_charge)
     {
         rho_fp[lev] = std::make_unique<MultiFab>(amrex::convert(ba,rho_nodal_flag),dm,2*ncomps,ngRho,tag("rho_fp"));
+
+        // Also allocate the MultiFab for the full phi grid
+        // get the full domain
+        Box domain_box = Geom(lev).Domain();
+        // make a new BoxArray from the domain Box
+        BoxArray ba_full(domain_box);
+        // make a DistributionMapping from the new BoxArray
+        DistributionMapping dm_full;
+        // force that distribution mapping to only go to the root proc
+        Vector<int> pmap = {0};
+        dm_full.define(pmap);
+        // make a FabArray to hold the phi data
+        full_rho_fp[lev] = std::make_unique<MultiFab>(amrex::convert(ba_full,rho_nodal_flag),dm_full,2*ncomps,ngRho,tag("full_rho_fp"));
     }
 
     if (do_electrostatic == ElectrostaticSolverAlgo::LabFrame)
@@ -1494,6 +1546,20 @@ WarpX::AllocLevelMFs (int lev, const BoxArray& ba, const DistributionMapping& dm
         IntVect ngPhi = IntVect( AMREX_D_DECL(1,1,1) );
         phi_fp[lev] = std::make_unique<MultiFab>(amrex::convert(ba,phi_nodal_flag),dm,ncomps,ngPhi,tag("phi_fp"));
         phi_fp[lev]->setVal(0.);
+
+        // Also allocate the MultiFab for the full phi grid
+        // get the full domain
+        Box domain_box = Geom(lev).Domain();
+        // make a new BoxArray from the domain Box
+        BoxArray ba_full(domain_box);
+        // make a DistributionMapping from the new BoxArray
+        DistributionMapping dm_full;
+        // force that distribution mapping to only go to the root proc
+        Vector<int> pmap = {0};
+        dm_full.define(pmap);
+        // make a FabArray to hold the phi data
+        full_phi_fp[lev] = std::make_unique<MultiFab>(amrex::convert(ba_full,phi_nodal_flag),dm_full,ncomps,ngPhi,tag("full_phi_fp"));
+        full_phi_fp[lev]->setVal(0.);
     }
 
     if (do_subcycling == 1 && lev == 0)
@@ -1844,6 +1910,7 @@ void WarpX::AllocLevelSpectralSolver (amrex::Vector<std::unique_ptr<SpectralSolv
                                                 noy_fft,
                                                 noz_fft,
                                                 do_nodal,
+                                                WarpX::fill_guards,
                                                 m_v_galilean,
                                                 m_v_comoving,
                                                 dx_vect,

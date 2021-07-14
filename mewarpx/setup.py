@@ -7,7 +7,8 @@ import setuptools
 requires = [
     "numpy",
     "scipy",
-    "psutil"
+    "psutil",
+    "pandas"
 ]
 
 extras = {

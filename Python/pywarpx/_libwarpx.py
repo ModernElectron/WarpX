@@ -18,10 +18,16 @@ from .Geometry import geometry
 
 try:
     # --- If mpi4py is going to be used, this needs to be imported
-    # --- before libwarpx is loaded (though don't know why)
+    # --- before libwarpx is loaded, because mpi4py calls MPI_Init
     from mpi4py import MPI
+    # --- Change MPI Comm type depending on MPICH (int) or OpenMPI (void*)
+    if MPI._sizeof(MPI.Comm) == ctypes.sizeof(ctypes.c_int):
+        _MPI_Comm_type = ctypes.c_int
+    else:
+        _MPI_Comm_type = ctypes.c_void_p
 except ImportError:
-    pass
+    MPI = None
+    _MPI_Comm_type = ctypes.c_void_p
 
 # --- Is there a better way of handling constants?
 clight = 2.99792458e+8 # m/s
@@ -136,6 +142,7 @@ def _array1d_from_pointer(pointer, dtype, size):
 
 # set the arg and return types of the wrapped functions
 libwarpx.amrex_init.argtypes = (ctypes.c_int, _LP_LP_c_char)
+libwarpx.amrex_init_with_inited_mpi.argtypes = (ctypes.c_int, _LP_LP_c_char, _MPI_Comm_type)
 libwarpx.warpx_getParticleStructs.restype = _LP_particle_p
 libwarpx.warpx_getParticleArrays.restype = _LP_LP_c_particlereal
 libwarpx.warpx_getEfield.restype = _LP_LP_c_real
@@ -171,7 +178,12 @@ libwarpx.warpx_getCurrentDensityFPLoVects_PML.restype = _LP_c_int
 libwarpx.warpx_getChargeDensityCP.restype = _LP_LP_c_real
 libwarpx.warpx_getChargeDensityCPLoVects.restype = _LP_c_int
 libwarpx.warpx_getChargeDensityFP.restype = _LP_LP_c_real
+libwarpx.warpx_getGatheredChargeDensityFP.restype = _LP_LP_c_real
 libwarpx.warpx_getChargeDensityFPLoVects.restype = _LP_c_int
+libwarpx.warpx_getPhiFP.restype = _LP_LP_c_real
+libwarpx.warpx_getGatheredPhiFP.restype = _LP_LP_c_real
+libwarpx.warpx_setPhiGridFP.restype = None
+libwarpx.warpx_getPointerFullPhiFP.restype = _LP_LP_c_real
 
 libwarpx.warpx_getEx_nodal_flag.restype = _LP_c_int
 libwarpx.warpx_getEy_nodal_flag.restype = _LP_c_int
@@ -208,6 +220,8 @@ libwarpx.warpx_getdt.restype = c_real
 libwarpx.warpx_maxStep.restype = ctypes.c_int
 libwarpx.warpx_stopTime.restype = c_real
 libwarpx.warpx_finestLevel.restype = ctypes.c_int
+libwarpx.warpx_getMyProc.restype = ctypes.c_int
+libwarpx.warpx_getNProcs.restype = ctypes.c_int
 
 libwarpx.warpx_EvolveE.argtypes = [c_real]
 libwarpx.warpx_EvolveB.argtypes = [c_real]
@@ -234,7 +248,7 @@ def get_nattr():
     # --- The -3 is because the comps include the velocites
     return libwarpx.warpx_nComps() - 3
 
-def amrex_init(argv):
+def amrex_init(argv, mpi_comm=None):
     # --- Construct the ctype list of strings to pass in
     argc = len(argv)
     argvC = (_LP_c_char * (argc+1))()
@@ -242,9 +256,14 @@ def amrex_init(argv):
         enc_arg = arg.encode('utf-8')
         argvC[i] = ctypes.create_string_buffer(enc_arg)
 
-    libwarpx.amrex_init(argc, argvC)
+    if mpi_comm is None or MPI is None:
+        libwarpx.amrex_init(argc, argvC)
+    else:
+        comm_ptr = MPI._addressof(mpi_comm)
+        comm_val = _MPI_Comm_type.from_address(comm_ptr)
+        libwarpx.amrex_init_with_inited_mpi(argc, argvC, comm_val)
 
-def initialize(argv=None):
+def initialize(argv=None, mpi_comm=None):
     '''
 
     Initialize WarpX and AMReX. Must be called before
@@ -253,7 +272,7 @@ def initialize(argv=None):
     '''
     if argv is None:
         argv = sys.argv
-    amrex_init(argv)
+    amrex_init(argv, mpi_comm)
     libwarpx.warpx_ConvertLabParamsToBoost()
     libwarpx.warpx_ReadBCParams()
     if geometry_dim == 'rz':
@@ -1142,6 +1161,83 @@ def get_mesh_charge_density_fp(level, include_ghosts=True):
 
     return _get_mesh_field_list(libwarpx.warpx_getChargeDensityFP, level, None, include_ghosts)
 
+
+def get_gathered_charge_density_fp(level):
+    '''
+
+    This returns a single numpy array containing the mesh charge density
+    data on the grid gathered from all processes. This version returns
+    the density on the fine patch for the given level.
+
+    Parameters
+    ----------
+
+        level          : the AMR level to get the data for
+
+    Returns
+    -------
+
+        A numpy array.
+
+    '''
+
+    return _get_mesh_field_list(libwarpx.warpx_getGatheredChargeDensityFP, level, None, True)
+
+
+def get_mesh_phi_fp(level, include_ghosts=True):
+    '''
+
+    This returns a list of numpy arrays containing the mesh electrostatic
+    potential data on each grid for this process. This version returns the
+    density on the fine patch for the given level.
+
+    The data for the numpy arrays are not copied, but share the underlying
+    memory buffer with WarpX. The numpy arrays are fully writeable.
+
+    Parameters
+    ----------
+
+        level          : the AMR level to get the data for
+        include_ghosts : whether to include ghost zones or not
+
+    Returns
+    -------
+
+        A List of numpy arrays.
+
+    '''
+
+    return _get_mesh_field_list(libwarpx.warpx_getPhiFP, level, None, include_ghosts)
+
+
+def get_gathered_phi_fp(level):
+    '''
+
+    This returns a single numpy array containing the mesh electrostatic
+    potential data on the grid gathered from all processes. This version returns
+    the density on the fine patch for the given level.
+
+    Parameters
+    ----------
+
+        level          : the AMR level to get the data for
+
+    Returns
+    -------
+
+        A numpy array.
+
+    '''
+
+    return _get_mesh_field_list(libwarpx.warpx_getGatheredPhiFP, level, None, True)
+
+def set_phi_grid_fp(level):
+    """This writes new phi data to warpx"""
+    libwarpx.warpx_setPhiGridFP(level)
+
+def get_pointer_full_phi_fp(level):
+    """This returns the full phi grid multifab from warpx"""
+    return _get_mesh_field_list(libwarpx.warpx_getPointerFullPhiFP, level, None, True)
 
 def _get_mesh_array_lovects(level, direction, include_ghosts=True, getlovectsfunc=None):
     assert(0 <= level and level <= libwarpx.warpx_finestLevel())

@@ -142,12 +142,10 @@ extern "C"
         warpx_amrex_init(argc, argv);
     }
 
-#ifdef BL_USE_MPI
     void amrex_init_with_inited_mpi (int argc, char* argv[], MPI_Comm mpicomm)
     {
         warpx_amrex_init(argc, argv, true, mpicomm);
     }
-#endif
 
     void amrex_finalize (int /*finalize_mpi*/)
     {
@@ -342,9 +340,20 @@ extern "C"
 
     WARPX_GET_SCALAR(warpx_getChargeDensityCP, WarpX::GetInstance().getrho_cp)
     WARPX_GET_SCALAR(warpx_getChargeDensityFP, WarpX::GetInstance().getrho_fp)
+    WARPX_GET_SCALAR(warpx_getGatheredChargeDensityFP, WarpX::GetInstance().getGatheredRho_fp)
 
     WARPX_GET_LOVECTS_SCALAR(warpx_getChargeDensityCPLoVects, WarpX::GetInstance().getrho_cp)
     WARPX_GET_LOVECTS_SCALAR(warpx_getChargeDensityFPLoVects, WarpX::GetInstance().getrho_fp)
+
+    WARPX_GET_SCALAR(warpx_getPhiFP, WarpX::GetInstance().getphi_fp)
+    WARPX_GET_SCALAR(warpx_getGatheredPhiFP, WarpX::GetInstance().getGatheredPhi_fp)
+
+    WARPX_GET_SCALAR(warpx_getPointerFullPhiFP, *WarpX::GetInstance().get_pointer_full_phi_fp)
+
+    void warpx_setPhiGridFP(int lev) {
+        WarpX::GetInstance().setPhiGrid_fp(lev);
+        return;
+    }
 
 #define WARPX_GET_FIELD_PML(FIELD, GETTER) \
     amrex::Real** FIELD(int lev, int direction, \
@@ -431,18 +440,18 @@ extern "C"
         WarpX& warpx = WarpX::GetInstance();
         warpx.ComputeDt ();
     }
-    void warpx_MoveWindow () {
+    void warpx_MoveWindow (int step,bool move_j) {
         WarpX& warpx = WarpX::GetInstance();
-        warpx.MoveWindow (true);
+        warpx.MoveWindow (step, move_j);
     }
 
     void warpx_EvolveE (amrex::Real dt) {
         WarpX& warpx = WarpX::GetInstance();
         warpx.EvolveE (dt);
     }
-    void warpx_EvolveB (amrex::Real dt) {
+    void warpx_EvolveB (amrex::Real dt, DtType a_dt_type) {
         WarpX& warpx = WarpX::GetInstance();
-        warpx.EvolveB (dt);
+        warpx.EvolveB (dt, a_dt_type);
     }
     void warpx_FillBoundaryE () {
         WarpX& warpx = WarpX::GetInstance();
@@ -500,9 +509,16 @@ extern "C"
         return warpx.finestLevel ();
     }
 
+    int warpx_getMyProc () {
+        return amrex::ParallelDescriptor::MyProc();
+    }
+
+    int warpx_getNProcs () {
+        return amrex::ParallelDescriptor::NProcs();
+    }
+
     void mypc_Redistribute () {
         auto & mypc = WarpX::GetInstance().GetPartContainer();
         mypc.Redistribute();
     }
-
 }

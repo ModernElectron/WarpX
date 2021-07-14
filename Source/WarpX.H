@@ -33,6 +33,7 @@
 #include "Particles/MultiParticleContainer.H"
 #include "Particles/WarpXParticleContainer.H"
 #include "Utils/IntervalsParser.H"
+#include "Utils/WarpXAlgorithmSelection.H"
 
 #include <AMReX.H>
 #include <AMReX_AmrCore.H>
@@ -48,6 +49,7 @@
 #include <AMReX_RealVect.H>
 #include <AMReX_Vector.H>
 #include <AMReX_VisMF.H>
+#include <AMReX_MultiFab.H>
 
 #include <AMReX_BaseFwd.H>
 #include <AMReX_AmrCoreFwd.H>
@@ -136,8 +138,8 @@ public:
     static int macroscopic_solver_algo;
     static amrex::Vector<int> field_boundary_lo;
     static amrex::Vector<int> field_boundary_hi;
-    static amrex::Vector<int> particle_boundary_lo;
-    static amrex::Vector<int> particle_boundary_hi;
+    static amrex::Vector<ParticleBoundaryType> particle_boundary_lo;
+    static amrex::Vector<ParticleBoundaryType> particle_boundary_hi;
 
 
     // If true, the current is deposited on a nodal grid and then centered onto a staggered grid
@@ -150,6 +152,9 @@ public:
     // PSATD: If true, the update equation for E contains both J and rho (at times n and n+1):
     // default is false for standard PSATD and true for Galilean PSATD (set in WarpX.cpp)
     bool update_with_rho = false;
+
+    // PSATD: Whether to fill the guard cells with inverse FFTs based on the boundary conditions
+    static amrex::IntVect fill_guards;
 
     // div(E) and div(B) cleaning
     static bool do_dive_cleaning;
@@ -245,6 +250,7 @@ public:
     amrex::MultiFab * get_pointer_F_fp  (int lev) const { return F_fp[lev].get(); }
     amrex::MultiFab * get_pointer_G_fp  (int lev) const { return G_fp[lev].get(); }
     amrex::MultiFab * get_pointer_phi_fp  (int lev) const { return phi_fp[lev].get(); }
+    amrex::MultiFab * get_pointer_full_phi_fp (int lev) const {return full_phi_fp[lev].get();}
 
     amrex::MultiFab * get_pointer_Efield_cp  (int lev, int direction) const { return Efield_cp[lev][direction].get(); }
     amrex::MultiFab * get_pointer_Bfield_cp  (int lev, int direction) const { return Bfield_cp[lev][direction].get(); }
@@ -272,6 +278,29 @@ public:
 
     const amrex::MultiFab& getEfield_avg_fp (int lev, int direction) {return *Efield_avg_fp[lev][direction];}
     const amrex::MultiFab& getBfield_avg_fp (int lev, int direction) {return *Bfield_avg_fp[lev][direction];}
+
+    const amrex::MultiFab& getGatheredRho_fp (int lev) {
+        // copy data from the MultiFab with distributed Boxes to the new one
+        // with the single Box
+        (*full_rho_fp[lev]).ParallelCopy(getrho_fp(lev));
+
+        return *full_rho_fp[lev];
+    }
+
+    const amrex::MultiFab& getGatheredPhi_fp (int lev) {
+        // copy data from the MultiFab with distributed Boxes to the new one
+        // with the single Box
+        amrex::MultiFab* phi_mf = get_pointer_full_phi_fp(lev);
+        (*phi_mf).ParallelCopy(*get_pointer_phi_fp(lev));
+
+        return *phi_mf;
+    }
+
+    void setPhiGrid_fp (int lev) {
+        // copy data from single box multifab into multifab with distributed boxes
+        (*get_pointer_phi_fp(lev)).ParallelCopy(*full_phi_fp[lev]);
+        return;
+    }
 
     bool DoPML () const {return do_pml;}
 
@@ -334,7 +363,12 @@ public:
     void ComputeMaxStep ();
     // Compute max_step automatically for simulations in a boosted frame.
     void computeMaxStepBoostAccelerator(const amrex::Geometry& geom);
-    int  MoveWindow (bool move_j);
+
+    /** \brief Move the moving window
+     * \param step Time step
+     * \param move_j whether the current is shifted or not
+     */
+    int  MoveWindow (const int step, bool move_j);
 
     /**
      * \brief
@@ -346,13 +380,13 @@ public:
     void ResetProbDomain (const amrex::RealBox& rb);
     void EvolveE (         amrex::Real dt);
     void EvolveE (int lev, amrex::Real dt);
-    void EvolveB (         amrex::Real dt);
-    void EvolveB (int lev, amrex::Real dt);
+    void EvolveB (         amrex::Real dt, DtType dt_type);
+    void EvolveB (int lev, amrex::Real dt, DtType dt_type);
     void EvolveF (         amrex::Real dt, DtType dt_type);
     void EvolveF (int lev, amrex::Real dt, DtType dt_type);
     void EvolveG (         amrex::Real dt, DtType dt_type);
     void EvolveG (int lev, amrex::Real dt, DtType dt_type);
-    void EvolveB (int lev, PatchType patch_type, amrex::Real dt);
+    void EvolveB (int lev, PatchType patch_type, amrex::Real dt, DtType dt_type);
     void EvolveE (int lev, PatchType patch_type, amrex::Real dt);
     void EvolveF (int lev, PatchType patch_type, amrex::Real dt, DtType dt_type);
     void EvolveG (int lev, PatchType patch_type, amrex::Real dt, DtType dt_type);
@@ -414,7 +448,7 @@ public:
 #endif
 
     void ApplyEfieldBoundary (const int lev, PatchType patch_type);
-    void ApplyBfieldBoundary (const int lev, PatchType patch_type);
+    void ApplyBfieldBoundary (const int lev, PatchType patch_type, DtType dt_type);
 
     void DampPML ();
     void DampPML (int lev);
@@ -511,6 +545,7 @@ public:
     void sett_new (int lev, amrex::Real time) {t_new[lev] = time;}
     amrex::Vector<amrex::Real> getdt () const {return dt;}
     amrex::Real getdt (int lev) const {return dt[lev];}
+    int getdo_moving_window() const {return do_moving_window;}
     amrex::Real getmoving_window_x() const {return moving_window_x;}
     amrex::Real getcurrent_injection_position () const {return current_injection_position;}
     bool getis_synchronized() const {return is_synchronized;}
@@ -548,8 +583,21 @@ public:
     // Parameters for lab frame electrostatic
     static amrex::Real self_fields_required_precision;
     static int self_fields_max_iters;
+    static int self_fields_verbosity;
 
-    static int do_moving_window;
+    static int do_moving_window; // boolean
+    static int start_moving_window_step; // the first step to move window
+    static int end_moving_window_step; // the last step to move window
+    /** Returns true if the moving window is active for the provided step
+     *
+     * @param step time step
+     * @return true if active, else false
+     */
+    static int moving_window_active (int const step) {
+        bool const step_before_end = (step < end_moving_window_step) || (end_moving_window_step < 0);
+        bool const step_after_start = (step >= start_moving_window_step);
+        return do_moving_window && step_before_end && step_after_start;
+    }
     static int moving_window_dir;
     static amrex::Real moving_window_v;
     static bool fft_do_time_averaging;
@@ -594,17 +642,20 @@ public:
                      amrex::Vector<std::unique_ptr<amrex::MultiFab> >& phi,
                      std::array<amrex::Real, 3> const beta = {{0,0,0}},
                      amrex::Real const required_precision=amrex::Real(1.e-11),
-                     const int max_iters=200) const;
+                     const int max_iters=200,
+                     const int verbosity=2) const;
     void computePhiRZ (const amrex::Vector<std::unique_ptr<amrex::MultiFab> >& rho,
                        amrex::Vector<std::unique_ptr<amrex::MultiFab> >& phi,
                        std::array<amrex::Real, 3> const beta,
                        amrex::Real const required_precision,
-                       int const max_iters) const;
+                       int const max_iters,
+                       int const verbosity) const;
     void computePhiCartesian (const amrex::Vector<std::unique_ptr<amrex::MultiFab> >& rho,
                        amrex::Vector<std::unique_ptr<amrex::MultiFab> >& phi,
                        std::array<amrex::Real, 3> const beta,
                        amrex::Real const required_precision,
-                       int const max_iters) const;
+                       int const max_iters,
+                       int const verbosity) const;
 
     void setPhiBC (amrex::Vector<std::unique_ptr<amrex::MultiFab> >& phi,
                    std::array<bool,AMREX_SPACEDIM> dirichlet_flag,
@@ -936,7 +987,9 @@ private:
     amrex::Vector<            std::unique_ptr<amrex::MultiFab>      > F_fp;
     amrex::Vector<            std::unique_ptr<amrex::MultiFab>      > G_fp;
     amrex::Vector<            std::unique_ptr<amrex::MultiFab>      > rho_fp;
+    amrex::Vector<            std::unique_ptr<amrex::MultiFab>      > full_rho_fp;
     amrex::Vector<            std::unique_ptr<amrex::MultiFab>      > phi_fp;
+    amrex::Vector<            std::unique_ptr<amrex::MultiFab>      > full_phi_fp;
     amrex::Vector<std::array< std::unique_ptr<amrex::MultiFab>, 3 > > current_fp;
     amrex::Vector<std::array< std::unique_ptr<amrex::MultiFab>, 3 > > Efield_fp;
     amrex::Vector<std::array< std::unique_ptr<amrex::MultiFab>, 3 > > Bfield_fp;
