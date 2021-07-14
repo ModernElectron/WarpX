@@ -54,3 +54,15 @@ class ZPlane(Assembly):
         if self.zsign not in [-1, 1]:
             raise ValueError("self.zsign = {} is not either -1 or 1.".format(
                 self.zsign))
+
+class Cylinder(Assembly):
+    """A finite Cylinder"""
+
+    def __init__(self, center_x, center_y, center_z, height, radius, V, T, WF, name):
+        super(Cylinder, self).__init__(V=V, T=T, WF=WF, name=name)
+
+        self.center_x = center_x
+        self.center_y = center_y
+        self.center_z = center_z
+        self.height = height
+        self.radius = radius
