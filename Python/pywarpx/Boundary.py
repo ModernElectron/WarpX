@@ -7,9 +7,5 @@
 from .Bucket import Bucket
 
 boundary = Bucket('boundary')
-boundary_list = []
 
-def newboundary(name):
-    result = Bucket(name)
-    boundary_list.append(result)
-    return result
+embedded_boundary = Bucket('eb2')

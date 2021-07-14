@@ -760,15 +760,15 @@ class EmbeddedBoundary(object):
         self.box_has_fluid_inside = box_has_fluid_inside
 
     def initialize_inputs(self):
-        boundary = pywarpx.Boundary.newboundary(self.geom_type)
+        boundary = pywarpx.Boundary.embedded_boundary
         if self.geom_type == "box":
             assert self.box_lo is not None, Exception("attempted to initialize 'box' embedded boundary but box_lo was None.")
             assert self.box_hi is not None, Exception("attempted to initialize 'box' embedded boundary but box_hi was None.")
             assert self.box_has_fluid_inside is not None, Exception("attempted to initialize 'box' embedded boundary but box_has_fluid_inside was None.")
 
-            boundary.box_lo = self.box_lo
-            boundary.box_hi = self.box_hi
-            boundary.box_has_fluid_inside = self.box_has_fluid_inside
+            boundary.add_new_attr("box_lo", self.box_lo)
+            boundary.add_new_attr("box_hi", self.box_hi)
+            boundary.add_new_attr("box_has_fluid_inside", self.box_has_fluid_inside)
         # elif other geometries
 
 
@@ -792,6 +792,8 @@ class Simulation(picmistandard.PICMI_Simulation):
         self.use_fdtd_nci_corr = kw.pop('warpx_use_fdtd_nci_corr', None)
 
         self.collisions = kw.pop('warpx_collisions', None)
+
+        self.embedded_boundary = kw.pop('warpx_embedded_boundary', None)
 
         self.inputs_initialized = False
         self.warpx_initialized = False

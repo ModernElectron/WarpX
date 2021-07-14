@@ -106,6 +106,10 @@ mcc_wrapper = MCC(
     exclude_collisions=['charge_exchange']
 )
 
+# Embedded Boundary
+
+boundary = picmi.EmbeddedBoundary(geom_type="box", box_lo="-0.3 -0.3 -0.3", box_hi="0.3 0.3 0.3", box_has_fluid_inside=True)
+
 ##########################
 # numerics components
 ##########################
@@ -167,6 +171,8 @@ mwxrun.simulation.add_species(
 
 mwxrun.simulation.add_diagnostic(field_diag)
 # sim.add_diagnostic(restart_dumps)
+
+mwxrun.simulation.embedded_boundary = boundary
 
 ##########################
 # WarpX and mewarpx initialization
