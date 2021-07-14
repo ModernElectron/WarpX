@@ -58,15 +58,14 @@ class ZPlane(Assembly):
 class Cylinder(Assembly):
     """A finite Cylinder """
 
-    def __init__(self, center_x, center_y, center_z, height, radius, direction,
+    def __init__(self, center, height, radius, direction,
                  has_fluid_inside, V, T, WF, name):
 
         """Basic initialization.
 
         Arguments:
-            center_x (float): The x coordinate of the center of the cylinder (m)
-            center_y (float): The y coordinate of the center of the cylinder (m)
-            center_z (float): The z coordinate of the center of the cylinder (m)
+            center_x (string): The coordinates of the center of the cylinder. In the
+                format of "x y z" for 3D or "x y" or "x z" for 2D. Coordinates are in (m)
             height (float): The full height (or length) of the cylinder (m)
             radius (float): The radius of the cylinder (m)
             direction (int): The axis that the cylinder is aligned to. If this EB is in 3D
@@ -81,9 +80,7 @@ class Cylinder(Assembly):
         """
         super(Cylinder, self).__init__(V=V, T=T, WF=WF, name=name)
 
-        self.center_x = center_x
-        self.center_y = center_y
-        self.center_z = center_z
+        self.center = center
         self.height = height
         self.radius = radius
         self.direction = direction
