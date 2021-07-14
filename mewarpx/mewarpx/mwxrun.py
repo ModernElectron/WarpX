@@ -8,7 +8,9 @@ SETUP order:
         from mewarpx import util as mwxutil
         mwxutil.init_libwarpx(ndim=ndim, rz=rz)
 
-    - Import other mewarpx modules, especially this one (mwxrun)
+    - Import other mewarpx modules
+    - Use ``from mewarpx.mwxrun import mwxrun`` to import the class holding
+      all the simulation information, defined here.
     - Set up PICMI things, referring to mwxrun's ``picmi.Simulation`` object,
     ``mwxrun.simulation``. Add PICMI species to the PICMI Simulation.
 
