@@ -58,7 +58,8 @@ class ZPlane(Assembly):
 class Cylinder(Assembly):
     """A finite Cylinder"""
 
-    def __init__(self, center_x, center_y, center_z, height, radius, V, T, WF, name):
+    def __init__(self, center_x, center_y, center_z, height, radius, direction,
+                 has_fluid_inside, V, T, WF, name):
         super(Cylinder, self).__init__(V=V, T=T, WF=WF, name=name)
 
         self.center_x = center_x
@@ -66,3 +67,5 @@ class Cylinder(Assembly):
         self.center_z = center_z
         self.height = height
         self.radius = radius
+        self.direction = direction
+        self.has_fluid_inside = has_fluid_inside
