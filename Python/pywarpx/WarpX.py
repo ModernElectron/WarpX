@@ -10,6 +10,7 @@ from .Constants import my_constants
 from .Amr import amr
 from .Geometry import geometry
 from .Boundary import boundary
+from .Boundary import embedded_boundary
 from .Algo import algo
 from .Langmuirwave import langmuirwave
 from .Interpolation import interpolation
@@ -33,6 +34,7 @@ class WarpX(Bucket):
         argv += amr.attrlist()
         argv += geometry.attrlist()
         argv += boundary.attrlist()
+        argv += embedded_boundary.attrlist()
         argv += algo.attrlist()
         argv += langmuirwave.attrlist()
         argv += interpolation.attrlist()

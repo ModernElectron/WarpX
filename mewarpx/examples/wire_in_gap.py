@@ -7,7 +7,6 @@ from mewarpx import util as mwxutil
 mwxutil.init_libwarpx(ndim=2, rz=False)
 
 from mewarpx.mwxrun import mwxrun
-from mewarpx.poisson_pseudo_1d import PoissonSolverPseudo1D
 from mewarpx.mcc_wrapper import MCC
 from mewarpx.diags_store import diag_base
 
@@ -22,14 +21,12 @@ constants = picmi.constants
 # physics parameters
 ##########################
 
-D_CA = 0.067 # m
+D_CA = 0.5e-3 # m
 
-N_INERT = 9.64e20 # m^-3
+P_INERT = 2 # Torr
 T_INERT = 300.0 # K
 
-FREQ = 13.56e6 # MHz
-
-VOLTAGE = 450.0
+VOLTAGE = 20.0
 
 M_ION = 6.67e-27 # kg
 
@@ -41,7 +38,7 @@ T_ELEC = 30000.0 # K
 ##########################
 
 # --- Grid
-nx = 8
+nx = 128
 nz = 128
 
 xmin = 0.0
@@ -49,19 +46,19 @@ zmin = 0.0
 xmax = D_CA / nz * nx
 zmax = D_CA
 
-number_per_cell_each_dim = [16, 32]
+number_per_cell_each_dim = [10, 10]
 
-DT = 1.0 / (400 * FREQ)
+DT = 1.0e-12
 
 # Total simulation time in seconds
-TOTAL_TIME = 500.0 * DT # 1280 / FREQ
+TOTAL_TIME = 5.0 * DT # 1280 / FREQ
 # Time (in seconds) between diagnostic evaluations
 # DIAG_INTERVAL = 100.0 * DT # 32 / FREQ
 
 # --- Number of time steps
 max_steps = int(TOTAL_TIME / DT)
-diag_steps = 100
-diagnostic_intervals = "400::10"
+diag_steps = 5
+diagnostic_intervals = f"::{diag_steps}"
 
 print('Setting up simulation with')
 print('  dt = %.3e s' % DT)
@@ -70,8 +67,6 @@ print('  Total time = %.3e s (%i timesteps)' % (TOTAL_TIME, max_steps))
 ##########################
 # physics components
 ##########################
-
-anode_voltage = lambda t: VOLTAGE * np.sin(2.0 * np.pi * FREQ * t)
 
 v_rms_elec = np.sqrt(constants.kb * T_ELEC / constants.m_e)
 v_rms_ion = np.sqrt(constants.kb * T_INERT / M_ION)
@@ -102,9 +97,17 @@ ions = picmi.Species(
 
 # MCC collisions
 mcc_wrapper = MCC(
-    electrons, ions, T_INERT=T_INERT, N_INERT=N_INERT,
+    electrons, ions, T_INERT=T_INERT, P_INERT=P_INERT,
     exclude_collisions=['charge_exchange']
 )
+
+# Embedded Boundary
+boundary = picmi.EmbeddedBoundary(
+    geom_type="cylinder", cylinder_center="0.25e-3 0.25e-3",
+    cylinder_radius=100e-6, cylinder_height=1, cylinder_direction=2,
+    has_fluid_inside=False
+)
+mwxrun.simulation.embedded_boundary = boundary
 
 ##########################
 # numerics components
@@ -118,8 +121,8 @@ grid = picmi.Cartesian2DGrid(
     upper_boundary_conditions=['periodic', 'dirichlet'],
     lower_boundary_conditions_particles=['periodic', 'absorbing'],
     upper_boundary_conditions_particles=['periodic', 'absorbing'],
-    warpx_potential_hi_z = anode_voltage, #"%.1f*sin(2*pi*%.5e*t)" % (VOLTAGE, FREQ),
-    moving_window_velocity = None,
+    warpx_potential_lo_z = VOLTAGE,
+    warpx_potential_hi_z = VOLTAGE,
     warpx_max_grid_size = nz//4
 )
 
@@ -127,10 +130,10 @@ grid = picmi.Cartesian2DGrid(
 # declare solver
 ##########################
 
-# solver = picmi.ElectrostaticSolver(
-#    grid=grid, method='Multigrid', required_precision=1e-12
-# )
-solver = PoissonSolverPseudo1D(grid=grid)
+solver = picmi.ElectrostaticSolver(
+   grid=grid, method='Multigrid', required_precision=1e-6,
+   warpx_self_fields_verbosity=0
+)
 
 ##########################
 # diagnostics
@@ -178,13 +181,14 @@ mwxrun.init_run()
 # Add ME diagnostic
 ##########################
 
-diag_base.TextDiag(diag_steps=diag_steps, preset_string='perfdebug')
+#diag_base.TextDiag(diag_steps=diag_steps, preset_string='perfdebug')
 
 ##########################
 # simulation run
 ##########################
 
 mwxrun.simulation.step()
+#mwxrun.simulation.write_input_file()
 
 ##########################
 # collect diagnostics
@@ -193,26 +197,27 @@ mwxrun.simulation.step()
 if mwxrun.me == 0:
     import glob
     import yt
+    import matplotlib.pyplot as plt
 
-    data_dirs = glob.glob('diags/diags*')
-    if len(data_dirs) == 0:
-        raise RuntimeError("No data files found.")
+    try:
+        datafolder = sorted(glob.glob('diags/diags*'))[-1]
 
-    for ii, data in enumerate(data_dirs):
-
-        datafolder = data
         print('Reading ', datafolder, '\n')
         ds = yt.load( datafolder )
         grid_data = ds.covering_grid(
             level=0, left_edge=ds.domain_left_edge, dims=ds.domain_dimensions
         )
-        if ii == 0:
-            rho_data = np.mean(
-                grid_data['rho_he_ions'].to_ndarray()[:,:,0], axis=0
-            ) / constants.q_e
-        else:
-            rho_data += np.mean(
-                grid_data['rho_he_ions'].to_ndarray()[:,:,0], axis=0
-            ) / constants.q_e
-    rho_data /= (ii + 1)
-    np.save('direct_solver_avg_rho_data.npy', rho_data)
+        phi_data = grid_data['phi'].to_ndarray()[:,:,0]
+
+        c = plt.imshow(phi_data,
+            extent=[
+                ds.domain_left_edge[0], ds.domain_right_edge[0],
+                ds.domain_left_edge[1], ds.domain_right_edge[1]
+            ],
+            aspect='auto'
+        )
+        plt.colorbar(c)
+        plt.show()
+
+    except IndexError:
+        print('No datafiles found.')

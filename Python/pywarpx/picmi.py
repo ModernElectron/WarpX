@@ -752,24 +752,30 @@ class MCCCollisions(object):
 class EmbeddedBoundary(object):
     """Custom class to handle set up of embedded boundaries in WarpX"""
 
-    def __init__(self, geom_type, box_lo=None, box_hi=None,
-                 box_has_fluid_inside=None):
+    def __init__(self, geom_type=None, has_fluid_inside=None, **kwargs):
         self.geom_type = geom_type
-        self.box_lo = box_lo
-        self.box_hi = box_hi
-        self.box_has_fluid_inside = box_has_fluid_inside
+        self.has_fluid_inside = has_fluid_inside
+        self.kwargs = kwargs
 
     def initialize_inputs(self):
-        boundary = pywarpx.Boundary.embedded_boundary
-        if self.geom_type == "box":
-            assert self.box_lo is not None, Exception("attempted to initialize 'box' embedded boundary but box_lo was None.")
-            assert self.box_hi is not None, Exception("attempted to initialize 'box' embedded boundary but box_hi was None.")
-            assert self.box_has_fluid_inside is not None, Exception("attempted to initialize 'box' embedded boundary but box_has_fluid_inside was None.")
 
-            boundary.add_new_attr("box_lo", self.box_lo)
-            boundary.add_new_attr("box_hi", self.box_hi)
-            boundary.add_new_attr("box_has_fluid_inside", self.box_has_fluid_inside)
-        # elif other geometries
+        pywarpx.embedded_boundary.geom_type = self.geom_type
+
+        if self.geom_type == "box":
+            pywarpx.embedded_boundary.box_lo =  self.kwargs.pop('box_lo')
+            pywarpx.embedded_boundary.box_hi = self.kwargs.pop('box_hi')
+            pywarpx.embedded_boundary.box_has_fluid_inside = self.has_fluid_inside
+        elif self.geom_type == "cylinder":
+            pywarpx.embedded_boundary.cylinder_center =  self.kwargs.pop('cylinder_center')
+            pywarpx.embedded_boundary.cylinder_radius = self.kwargs.pop('cylinder_radius')
+            pywarpx.embedded_boundary.cylinder_height = self.kwargs.pop('cylinder_height')
+            pywarpx.embedded_boundary.cylinder_direction = self.kwargs.pop('cylinder_direction')
+            pywarpx.embedded_boundary.cylinder_has_fluid_inside = self.has_fluid_inside
+#       elif self.geom_type is None:
+#       add functionality for this case
+
+        if len(self.kwargs) > 0:
+            raise AttributeError('Unused kwargs: ', self.kwargs)
 
 
 class Simulation(picmistandard.PICMI_Simulation):
@@ -792,7 +798,6 @@ class Simulation(picmistandard.PICMI_Simulation):
         self.use_fdtd_nci_corr = kw.pop('warpx_use_fdtd_nci_corr', None)
 
         self.collisions = kw.pop('warpx_collisions', None)
-
         self.embedded_boundary = kw.pop('warpx_embedded_boundary', None)
 
         self.inputs_initialized = False
@@ -858,6 +863,9 @@ class Simulation(picmistandard.PICMI_Simulation):
             for collision in self.collisions:
                 pywarpx.collisions.collision_names.append(collision.name)
                 collision.initialize_inputs()
+
+        if self.embedded_boundary is not None:
+            self.embedded_boundary.initialize_inputs()
 
         for i in range(len(self.lasers)):
             self.lasers[i].initialize_inputs()
