@@ -56,27 +56,29 @@ class ZPlane(Assembly):
                 self.zsign))
 
 class Cylinder(Assembly):
-    """A finite Cylinder
-
-    Arguments:
-        center_x (float): The x coordinate of the center of the cylinder (m)
-        center_y (float): The y coordinate of the center of the cylinder (m)
-        center_z (float): The z coordinate of the center of the cylinder (m)
-        height (float): The full height (or length) of the cylinder (m)
-        radius (float): The radius of the cylinder (m)
-        direction (int): The axis that the cylinder is aligned to. If this EB is in 3D
-            then 0=x, 1=y, 2=z. If working in 2D as XY then 0=x, 1=y. If working in 2D
-            as XZ then 0=x,1=Z.
-        has_fluid_inside (boolean): Whether or not the EB object should be considered
-            an object in free space or as a hole in an infinite conductor.
-        V (float): Voltage (V)
-        T (float): Temperature (K)
-        WF (float): Work function (eV)
-        name (str): Assembly name
-    """
+    """A finite Cylinder """
 
     def __init__(self, center_x, center_y, center_z, height, radius, direction,
                  has_fluid_inside, V, T, WF, name):
+
+        """Basic initialization.
+
+        Arguments:
+            center_x (float): The x coordinate of the center of the cylinder (m)
+            center_y (float): The y coordinate of the center of the cylinder (m)
+            center_z (float): The z coordinate of the center of the cylinder (m)
+            height (float): The full height (or length) of the cylinder (m)
+            radius (float): The radius of the cylinder (m)
+            direction (int): The axis that the cylinder is aligned to. If this EB is in 3D
+                then 0=x, 1=y, 2=z. If working in 2D as XY then 0=x, 1=y. If working in 2D
+                as XZ then 0=x,1=Z.
+            has_fluid_inside (boolean): Whether or not the EB object should be considered
+                an object in free space or as a hole in an infinite conductor.
+            V (float): Voltage (V)
+            T (float): Temperature (K)
+            WF (float): Work function (eV)
+            name (str): Assembly name
+        """
         super(Cylinder, self).__init__(V=V, T=T, WF=WF, name=name)
 
         self.center_x = center_x
