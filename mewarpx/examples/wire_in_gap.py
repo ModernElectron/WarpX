@@ -105,7 +105,7 @@ mcc_wrapper = MCC(
 boundary = picmi.EmbeddedBoundary(
     geom_type="cylinder", cylinder_center="0.25e-3 0.25e-3",
     cylinder_radius=100e-6, cylinder_height=1, cylinder_direction=2,
-    has_fluid_inside=False
+    has_fluid_inside=False, potential=-2.0
 )
 mwxrun.simulation.embedded_boundary = boundary
 
