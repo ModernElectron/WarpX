@@ -752,14 +752,17 @@ class MCCCollisions(object):
 class EmbeddedBoundary(object):
     """Custom class to handle set up of embedded boundaries in WarpX"""
 
-    def __init__(self, geom_type=None, has_fluid_inside=None, **kwargs):
+    def __init__(self, geom_type=None, has_fluid_inside=None,
+                 potential=None, **kwargs):
         self.geom_type = geom_type
         self.has_fluid_inside = has_fluid_inside
+        self.potential = potential
         self.kwargs = kwargs
 
     def initialize_inputs(self):
 
         pywarpx.embedded_boundary.geom_type = self.geom_type
+        pywarpx.embedded_boundary.potential = self.potential
 
         if self.geom_type == "box":
             pywarpx.embedded_boundary.box_lo =  self.kwargs.pop('box_lo')
