@@ -42,8 +42,8 @@ xmax = D_CA / ny * nx
 ymax = D_CA
 number_per_cell_each_dim = [16, 16]
 
-TOTAL_TIME = 1.0e-9 # s
-DIAG_INTERVAL = 1.0e-11
+TOTAL_TIME = 1e-7 # s
+DIAG_INTERVAL = 1.0e-9
 DT = 1.0e-12 # s
 
 max_steps = int(TOTAL_TIME / DT)
@@ -189,7 +189,7 @@ cathode = assemblies.ZPlane(z=1e-10, zsign=-1, V=0, T=T_cathode,
 emitter = emission.ZPlaneEmitter(conductor=cathode, T=T_cathode,
                                 use_Schottky=False)
 injector = emission.ThermionicInjector(emitter=emitter, species=electrons,
-                                        npart_per_cellstep=5,
+                                        npart_per_cellstep=50,
                                         T=T_cathode, WF=WF_cathode,
                                         A=6e5)
 
