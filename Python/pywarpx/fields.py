@@ -74,7 +74,7 @@ class _MultiFABWrapper(object):
 
     def __len__(self):
         lovects, ngrow = self._getlovects()
-        return len(lovects)
+        return lend(lovects)
 
     def mesh(self, direction):
         """Returns the mesh along the specified direction with the appropriate centering.

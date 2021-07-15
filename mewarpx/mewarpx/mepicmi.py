@@ -5,6 +5,7 @@ extended functionality without going through their standards.
 import logging
 
 from pywarpx import picmi
+from mewarpx.mwxrun import mwxrun
 
 # Get module-level logger
 logger = logging.getLogger(__name__)
@@ -17,6 +18,9 @@ class Species(picmi.Species):
         floats. To get around that we have our own variables sq/sm (species
         charge/mass) that are always floats.
         """
+        self.grid = kw.pop("warpx_grid", None)
+        self.n_macroparticle_per_cell = kw.pop("warpx_n_macroparticle_per_cell", [0, 0])
+
         super(Species, self).init(kw)
 
         if isinstance(self.charge, str):
@@ -38,3 +42,11 @@ class Species(picmi.Species):
                 raise ValueError("Unrecognized mass {}".format(self.mass))
         else:
             self.sm = self.mass
+
+        mwxrun.simulation.add_species(
+            self,
+            layout=picmi.GriddedLayout(
+                n_macroparticle_per_cell=self.n_macroparticle_per_cell,
+                grid=self.grid
+            )
+        )
