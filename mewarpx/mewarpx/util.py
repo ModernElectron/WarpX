@@ -178,3 +178,17 @@ def ideal_gas_density(p, T):
         N (float): Number density of gas atoms/molecules (1/cm^3)
     """
     return (p * constants.torr_cgs) / (constants.kb_cgs * T)
+
+
+def J_RD(T, WF, A):
+    """Returns the Richardson-Dushmann thermionic emission given a temperature
+    and effective work function. Constant coefficient of emission (A) is
+    assumed.
+    Arguments:
+        T (float): temperature of the cathode in K
+        WF (float): work function of the cathode in eV
+        A (float): coefficient of emission in Amp/cm^2/K^2
+    Returns:
+        J (float): current density in Amp/cm^2
+    """
+    return A*T**2*np.exp(-1.*WF/(constants.kb_eV*T))

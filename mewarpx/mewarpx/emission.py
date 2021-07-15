@@ -1,24 +1,17 @@
 """
 Files for arbitrary emission in WarpX.
 """
-# import collections
+
 import logging
 import warnings
 
-# import numba
 import numpy as np
 
-# import skimage.measure
-
-# import warp
-
-import minerva.util as minutil
-# from mewarpx import runtools, gentools, particles, warputil
-# from mewarpx.warputil import e, kb_eV, m_e
 from pywarpx import callbacks, _libwarpx, picmi
 
 import mewarpx.util as mwxutil
 from mewarpx.mwxrun import mwxrun
+import mewarpx.mwxconstants as constants
 
 # Get module-level logger
 logger = logging.getLogger(__name__)
@@ -56,7 +49,7 @@ class Injector(object):
     def cleanup(self):
         """Injectors should uninstall their injection function here.
         Previously used for testing to put Warp into a good state; could also
-        used if simulation should change partway through.
+        be used if simulation should change partway through.
         """
         raise NotImplementedError
 
@@ -198,8 +191,8 @@ class FixedNumberInjector(Injector):
             npart (int): Number of particles to inject total
             injectfreq (int): Number of steps to wait for next injection.
                 Default infinity.
-            injectoffset (int): First timestep to inject. Default 1 (???the
-                first possible timestep in WarpX???).
+            injectoffset (int): First timestep to inject. Default 1 (the
+                first possible timestep in WarpX).
             weight (float): Macroparticle weight to be introduced.
             rseed (int): If specified, all injection should be repeatable using
                 this rseed. At present each set of injected particles will have
@@ -293,16 +286,13 @@ class ThermionicInjector(Injector):
     """Performs standard every-timestep injection from a thermionic cathode."""
 
     def __init__(self, emitter, species, npart_per_cellstep, T,
-                 WF, A=minutil.A0*1e4,
+                 WF, A=constants.A0*1e4,
                  allow_poisson=False, wfac=1.0,
                  name=None, profile_decorator=None,
                  unique_particles=True):
-        """Sets up user-specified injection for warp (top.inject = 6).
-        Notes:
-            Must be run after w3d dimensions (warp.w3d.xmmin etc) and cell
-            numbers (warp.w3d.nx etc) are set.
+        """Sets up user-specified injection for warpX.
         Arguments:
-            emitter (:class:`metools.emission.Emitter`): Emitter object that
+            emitter (:class:`mewarpx.emission.Emitter`): Emitter object that
                 will specify positions and velocities of particles to inject.
             species (mepicmi.Species): A premade species. Note only electrons
                 will actually give physically meaningful weight calculations.
@@ -355,10 +345,10 @@ class ThermionicInjector(Injector):
                     area, dt))
 
         # Determine weight and injection numbers
-        electrons_per_step = (minutil.J_RD(self.T, self.WF, self.A)
+        electrons_per_step = (mwxutil.J_RD(self.T, self.WF, self.A)
                               * area * dt / picmi.constants.q_e)
         print("Area", area, "dt", dt, "J",
-              minutil.J_RD(self.T, self.WF, self.A))
+              mwxutil.J_RD(self.T, self.WF, self.A))
         print(("Emission current corresponds to injection of {:.2e} "
                "electrons per timestep").format(electrons_per_step))
         max_injections = int(round(npart_per_cellstep *
