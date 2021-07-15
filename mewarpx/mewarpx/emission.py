@@ -302,7 +302,7 @@ class ThermionicInjector(Injector):
             Must be run after w3d dimensions (warp.w3d.xmmin etc) and cell
             numbers (warp.w3d.nx etc) are set.
         Arguments:
-            emitter (:class:`metools.emission.Emitter`): Emitter object that
+            emitter (:class:`mewarpx.emission.Emitter`): Emitter object that
                 will specify positions and velocities of particles to inject.
             species (mepicmi.Species): A premade species. Note only electrons
                 will actually give physically meaningful weight calculations.
@@ -645,7 +645,7 @@ class BaseEmitter(object):
 
     def _get_xv_coords(self, npart, m, rseed):
         """Per-subclass implementation of generating new particle data.
-        See :func:`metools.emission.Emitter.get_newparticles` for details on
+        See :func:`mewarpx.emission.Emitter.get_newparticles` for details on
         arguments.
         Returns:
             x, y, z, vx, vy, vz (np.array): Each must be a 1D numpy array.
@@ -699,7 +699,7 @@ class Emitter(BaseEmitter):
                 weights.  Defaults to True.
             emission_type (str): Distribution function type used to sample
                 velocities of the emitted particles. Must be defined in
-                metools.runtools.get_velocities. Defaults to 'thermionic'.
+                mewarpx.util.get_velocities. Defaults to 'thermionic'.
         """
         super(Emitter, self).__init__()
         self.T = T
@@ -790,7 +790,7 @@ class ZPlaneEmitter(Emitter):
                 Default mwxrun.ymax.
             transverse_fac (float): Scale the transverse energy distribution by
                 this factor. Default 1. See
-                :func:`metools.runtools.get_velocities` for details.
+                :func:`mewarpx.util.get_velocities` for details.
             kwargs (dict): Any other keyword arguments supported by the parent
                 Emitter constructor (such as "use_Schottky" or
                 "emission_type").
@@ -834,7 +834,7 @@ class ZPlaneEmitter(Emitter):
 
     def _get_xv_coords(self, npart, m, rseed):
         """Get particle coordinates given particle number.
-        See :func:`metools.emission.Emitter.get_newparticles` for details.
+        See :func:`mewarpx.emission.Emitter.get_newparticles` for details.
         """
         if rseed is not None:
             nprstate = np.random.get_state()
@@ -894,22 +894,21 @@ class ArbitraryEmitter2D(Emitter):
                 use for calculating shape contours.
             transverse_fac (float): Scale the transverse energy distribution by
                 this factor. Default 1. See
-                :func:`metools.runtools.get_velocities` for details.
+                :func:`mewarpx.util.get_velocities` for details.
             kwargs (dict): Any other keyword arguments supported by the parent
                 Emitter constructor (such as "use_Schottky" or
                 "emission_type").
         """
         # Default Emitter initialization.
-        Emitter.__init__(self, T, conductor, **kwargs)
-
+        super(ArbitraryEmitter2D, self).__init__(T=T, conductor=conductor, **kwargs)
         # Save input parameters
         self.res_fac = res_fac
         self.transverse_fac = transverse_fac
 
         # Generate grid enclosed in bounding box
-        self.dx = self.solver.dx/res_fac
+        self.dx = mwxrun.dx/res_fac
         self.dy = 1.
-        self.dz = self.solver.dz/res_fac
+        self.dz = mwxrun.dz/res_fac
 
         self.dA = np.sqrt(self.dx*self.dz)
 
@@ -929,9 +928,10 @@ class ArbitraryEmitter2D(Emitter):
         Y = Y.flatten()
         Z = Z.flatten()
 
-        inside = np.reshape(
-            self.conductor.isinside(X, Y, Z, aura=self.dA/5.).isinside,
-            oshape)
+        # TODO: implement isinside function in Cylinder
+        # inside = np.reshape(
+        #     self.conductor.isinside(X, Y, Z, aura=self.dA/5.).isinside,
+        #     oshape)
 
         self.contours = np.squeeze(skimage.measure.find_contours(
             inside, 0.5))
@@ -953,7 +953,7 @@ class ArbitraryEmitter2D(Emitter):
         # Calculate the distance of each segment & sum to calculate the area
         self.distances = np.sqrt(self.dvec[:, 0]**2 + self.dvec[:, 1]**2)
         self.area = sum(self.distances)
-        self.cell_count = self.area / min(self.solver.dx, self.solver.dz)
+        self.cell_count = self.area / min(mwxrun.dx, mwxrun.dz)
         self.CDF = np.cumsum(self.distances)/self.area
 
         # Calculate Normal Vector by taking cross product with y-hat
@@ -975,7 +975,7 @@ class ArbitraryEmitter2D(Emitter):
 
     def _get_xv_coords(self, npart, m, rseed):
         """Get particle coordinates given particle number.
-        See :func:`metools.emission.Emitter.get_newparticles` for details.
+        See :func:`mewarpx.emitter.get_newparticles` for details.
         """
         if rseed is not None:
             nprstate = np.random.get_state()
