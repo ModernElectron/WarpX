@@ -5,10 +5,10 @@ Files for arbitrary emission in WarpX.
 import logging
 import warnings
 
-# import numba
+import numba
 import numpy as np
 
-# import skimage.measure
+import skimage.measure
 
 # import warp
 
@@ -874,4 +874,202 @@ class ZPlaneEmitter(Emitter):
         """
         normals = np.zeros((len(x), 3))
         normals[:, 2] = -self.zsign
+        return normals
+
+
+class ArbitraryEmitter2D(Emitter):
+
+    """ ArbitraryEmitter2D class takes in a conductor, calculates an approximate
+    surface that encloses the conductor and then sets up the appropriate
+    emitting surfaces, given a number of particles to emit.
+    """
+    geoms = ['XZ']
+
+    def __init__(self, conductor, T, res_fac=5., transverse_fac=1.0, **kwargs):
+        """Construct the emitter based on conductor object and temperature.
+        Arguments:
+            conductor (warp.Assembly object): Conductor to emit from.
+            T (float): Temperature in Kelvin.
+            res_fac (float): Level of resolution beyond the grid resolution to
+                use for calculating shape contours.
+            transverse_fac (float): Scale the transverse energy distribution by
+                this factor. Default 1. See
+                :func:`metools.runtools.get_velocities` for details.
+            kwargs (dict): Any other keyword arguments supported by the parent
+                Emitter constructor (such as "use_Schottky" or
+                "emission_type").
+        """
+        # Default Emitter initialization.
+        Emitter.__init__(self, T, conductor, **kwargs)
+
+        # Save input parameters
+        self.res_fac = res_fac
+        self.transverse_fac = transverse_fac
+
+        # Generate grid enclosed in bounding box
+        self.dx = self.solver.dx/res_fac
+        self.dy = 1.
+        self.dz = self.solver.dz/res_fac
+
+        self.dA = np.sqrt(self.dx*self.dz)
+
+        # A small delta is added to the maxima here; this ensures the last point
+        # is included. Without it, floating point errors determine whether or
+        # not the last point is included.
+        self.xvec = np.arange(
+            mwxrun.xmin, mwxrun.xmax + self.dx/1000., self.dx)
+        self.yvec = [0.]
+        self.zvec = np.arange(
+            mwxrun.zmin, mwxrun.zmax + self.dz/1000., self.dz)
+
+        [X, Y, Z] = np.squeeze(np.meshgrid(self.xvec, self.yvec, self.zvec,
+                                           indexing='xy'))
+        oshape = X.shape
+        X = X.flatten()
+        Y = Y.flatten()
+        Z = Z.flatten()
+
+        inside = np.reshape(
+            self.conductor.isinside(X, Y, Z, aura=self.dA/5.).isinside,
+            oshape)
+
+        self.contours = np.squeeze(skimage.measure.find_contours(
+            inside, 0.5))
+
+        self.contours[:, 0] = np.interp(self.contours[:, 0],
+                                        np.arange(self.xvec.size),
+                                        self.xvec)
+        self.contours[:, 1] = np.interp(self.contours[:, 1],
+                                        np.arange(self.zvec.size),
+                                        self.zvec)
+
+        self.centers = np.array(
+            [(self.contours[1:, 0] + self.contours[:-1, 0])/2.,
+             (self.contours[1:, 1] + self.contours[:-1, 1])/2.]).T
+        self.dvec = np.array(
+            [self.contours[1:, 0] - self.contours[:-1, 0],
+             self.contours[1:, 1] - self.contours[:-1, 1]]).T
+
+        # Calculate the distance of each segment & sum to calculate the area
+        self.distances = np.sqrt(self.dvec[:, 0]**2 + self.dvec[:, 1]**2)
+        self.area = sum(self.distances)
+        self.cell_count = self.area / min(self.solver.dx, self.solver.dz)
+        self.CDF = np.cumsum(self.distances)/self.area
+
+        # Calculate Normal Vector by taking cross product with y-hat
+        ndvec = self.dvec/np.tile(self.distances, (2, 1)).T
+        marching_normal = np.zeros(self.dvec.shape)
+        marching_normal[:, 0] = -ndvec[:, 1]
+        marching_normal[:, 1] = ndvec[:, 0]
+
+        # Check to make sure normal plus center is outside of conductor
+        partdist = self.dA*float(self.res_fac)/2.
+
+        pos = self.centers + marching_normal*partdist
+        px = pos[:, 0]
+        py = np.zeros_like(px)
+        pz = pos[:, 1]
+
+        nhat = self.conductor.calculatenormal(px, py, pz)
+        self.normal = nhat[[0, 2], :].T
+
+    def _get_xv_coords(self, npart, m, rseed):
+        """Get particle coordinates given particle number.
+        See :func:`metools.emission.Emitter.get_newparticles` for details.
+        """
+        if rseed is not None:
+            nprstate = np.random.get_state()
+            np.random.seed(rseed)
+            # rseedv is passed to get velocities. The basic rseed here is used
+            # for positions, below.
+            rseedv = np.random.randint(1000000000)
+        else:
+            rseedv = None
+
+        # Draw Random Numbers to determine which face to emit from
+        self.contour_idx = np.searchsorted(self.CDF, np.random.rand(npart))
+
+        # Rotate velocities based on angle of normal
+        v_coords = self.convert_vel_zhat_nhat(
+            mwxutil.get_velocities(num_samples=npart, T=self.T, m=m,
+                                    rseed=rseedv,
+                                    transverse_fac=self.transverse_fac,
+                                    emission_type=self.emission_type),
+            self.normal[self.contour_idx])
+
+        # Now get positions
+        pos1 = self.contours[self.contour_idx, :]
+        positions = (pos1 +
+                     (np.tile(np.random.rand(npart), (2, 1)).T
+                      * self.dvec[self.contour_idx, :]))
+
+        # Note: A random offset is no longer used for position, see randomdt
+        # in get_new_particles above. However, we do advance a tiny fraction to
+        # prevent particles being immediately scraped.
+        offset = mwxrun.get_dt()*1.e-5*v_coords
+
+        x_coords = np.zeros_like(v_coords)
+        x_coords[:, 0] = positions[:, 0] + offset[:, 0]
+        # x_coords[:, 1] = 0.
+        x_coords[:, 2] = positions[:, 1] + offset[:, 2]
+
+        if rseed is not None:
+            np.random.set_state(nprstate)
+
+        return {'x_coords': x_coords, 'v_coords': v_coords}
+
+    @staticmethod
+    # Synthetic tests showed 18 ms to 660us change from using np.dot +
+    # numba compilation. Without these changes, this function was taking 2-4% of
+    # some run times so the improvement is warranted.
+    @numba.jit(nopython=True)
+    def convert_vel_zhat_nhat(vels, nhat):
+        """Create a rotation matrix for Zhat to Nhat"""
+        Zhat = np.array([0., 1.])
+
+        newvels = np.zeros(vels.shape)
+
+        for ii in range(vels.shape[0]):
+            Cvec = Zhat - nhat[ii, :]
+            Cvec2 = np.dot(Cvec, Cvec)
+
+            theta = np.arccos(1. - Cvec2/2.)
+
+            # Check to see if normal is pointing toward -xhat
+            # Resolves angle ambiguity in law of cosines
+            if nhat[ii, 0] < 0.:
+                theta = -theta
+
+            # Rotate in XZ plane, keeping Y the same
+            R = np.array([[np.cos(theta), 0., np.sin(theta)],
+                          [0., 1., 0.],
+                          [-np.sin(theta), 0., np.cos(theta)]])
+
+            newvels[ii, :] = np.dot(R, vels[ii, :])
+
+        return newvels
+
+    def get_normals(self, x, y, z):
+        """Calculate local surface normal at specified coordinates.
+        Arguments:
+            x (np.ndarray): x-coordinates of emitted particles (in meters).
+            y (np.ndarray): y-coordinates of emitted particles (in meters).
+            z (np.ndarray): z-coordinates of emitted particles (in meters).
+        Returns:
+            normals (np.ndarray): nx3 array containing the outward surface
+                normal vector at each particle location.
+        """
+        # Since we've already pre-computed all the normals and already picked
+        # the right ones during the call to _get_xv_coords(), we can ignore the
+        # coordinate arguments here entirely and use the recently saved
+        # "contour_idx" values for indexing the pre-tabulated normals. To
+        # prevent this from being abused, we'll first check that the length of
+        # the coordinate lists matches that of the contour_idx list.
+        if len(x) != len(self.contour_idx):
+            raise ValueError('Length of particle coordinate list does not match'
+                             + ' the most recent number of emitted particles!')
+
+        normals = np.zeros((len(x), 3))
+        normals[:, 0] = self.normal[self.contour_idx, 0]
+        normals[:, 2] = self.normal[self.contour_idx, 1]
         return normals
