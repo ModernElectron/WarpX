@@ -9,6 +9,7 @@ mwxutil.init_libwarpx(ndim=2, rz=False)
 from mewarpx.mwxrun import mwxrun
 from mewarpx.mcc_wrapper import MCC
 from mewarpx.diags_store import diag_base
+from mewarpx import assemblies
 
 from pywarpx import picmi
 import pywarpx
@@ -102,16 +103,20 @@ mcc_wrapper = MCC(
 )
 
 # Embedded Boundary
-boundary = picmi.EmbeddedBoundary(
-    geom_type="cylinder", cylinder_center="0.25e-3 0.25e-3",
-    cylinder_radius=100e-6, cylinder_height=1, cylinder_direction=2,
-    has_fluid_inside=False, potential=-2.0
+cylinder = assemblies.Cylinder(
+    center="0.25e-3 0.25e-3", height=1,
+    radius=100e-6, direction=2,
+    has_fluid_inside=False, V=-2.0, T=300,
+    WF=4.7, name="Wire"
 )
-mwxrun.simulation.embedded_boundary = boundary
+
+mwxrun.simulation.embedded_boundary = cylinder.get_picmi_object()
 
 ##########################
 # numerics components
 ##########################
+anode = assemblies.Assembly(VOLTAGE, 1300, 1.3, "Anode")
+cathode = assemblies.Assembly(VOLTAGE, 300, 1.5, "Cathode")
 
 grid = picmi.Cartesian2DGrid(
     number_of_cells = [nx, nz],
@@ -121,8 +126,8 @@ grid = picmi.Cartesian2DGrid(
     upper_boundary_conditions=['periodic', 'dirichlet'],
     lower_boundary_conditions_particles=['periodic', 'absorbing'],
     upper_boundary_conditions_particles=['periodic', 'absorbing'],
-    warpx_potential_lo_z = VOLTAGE,
-    warpx_potential_hi_z = VOLTAGE,
+    warpx_potential_lo_z = anode.getvoltage(),
+    warpx_potential_hi_z = cathode.getvoltage(),
     warpx_max_grid_size = nz//4
 )
 

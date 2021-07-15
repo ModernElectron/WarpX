@@ -2,6 +2,7 @@
 Placeholder for assembly implementations.
 """
 
+from pywarpx import picmi
 
 class Assembly(object):
 
@@ -85,3 +86,11 @@ class Cylinder(Assembly):
         self.radius = radius
         self.direction = direction
         self.has_fluid_inside = has_fluid_inside
+
+    def get_picmi_object(self):
+        return picmi.EmbeddedBoundary(
+            geom_type="cylinder", cylinder_center=self.center,
+            cylinder_radius=self.radius, cylinder_height=self.height,
+            cylinder_direction=self.direction, has_fluid_inside=self.has_fluid_inside,
+            potential=self.V
+        )
