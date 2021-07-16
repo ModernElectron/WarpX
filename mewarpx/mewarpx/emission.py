@@ -175,6 +175,7 @@ class Injector(object):
         """
         raise NotImplementedError
 
+
 class FixedNumberInjector(Injector):
 
     """Inject n particles every t timesteps."""
