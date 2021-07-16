@@ -635,7 +635,7 @@ class BaseEmitter(object):
 
     def _get_xv_coords(self, npart, m, rseed):
         """Per-subclass implementation of generating new particle data.
-        See :func:`metools.emission.Emitter.get_newparticles` for details on
+        See :func:`mewarpx.emission.Emitter.get_newparticles` for details on
         arguments.
         Returns:
             x, y, z, vx, vy, vz (np.array): Each must be a 1D numpy array.
@@ -689,7 +689,7 @@ class Emitter(BaseEmitter):
                 weights.  Defaults to True.
             emission_type (str): Distribution function type used to sample
                 velocities of the emitted particles. Must be defined in
-                metools.runtools.get_velocities. Defaults to 'thermionic'.
+                mewarpx.util.get_velocities. Defaults to 'thermionic'.
         """
         super(Emitter, self).__init__()
         self.T = T
@@ -762,7 +762,7 @@ class ZPlaneEmitter(Emitter):
         """Initialize an emitter for a planar cathode.
 
         Arguments:
-            conductor (warp.Assembly): Conductor object, used to obtain work
+            conductor (warpx.Assembly): Conductor object, used to obtain work
                 function. Can later grab other variables from this conductor.
             T (float): Temperature in Kelvin for the emitter; determines
                 velocities.
@@ -780,7 +780,7 @@ class ZPlaneEmitter(Emitter):
                 Default mwxrun.ymax.
             transverse_fac (float): Scale the transverse energy distribution by
                 this factor. Default 1. See
-                :func:`metools.runtools.get_velocities` for details.
+                :func:`mewarpx.util.get_velocities` for details.
             kwargs (dict): Any other keyword arguments supported by the parent
                 Emitter constructor (such as "use_Schottky" or
                 "emission_type").
@@ -824,7 +824,7 @@ class ZPlaneEmitter(Emitter):
 
     def _get_xv_coords(self, npart, m, rseed):
         """Get particle coordinates given particle number.
-        See :func:`metools.emission.Emitter.get_newparticles` for details.
+        See :func:`mewarpx.emission.Emitter.get_newparticles` for details.
         """
         if rseed is not None:
             nprstate = np.random.get_state()
