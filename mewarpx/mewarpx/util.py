@@ -10,20 +10,6 @@ import numpy as np
 from pywarpx import geometry
 from mewarpx import mwxconstants as constants
 
-# Pass comm_world to sim.step(<steps>, <comm_world>) to send comm_world to amrex
-
-try:
-    from mpi4py import MPI as mpi
-    comm_world = mpi.COMM_WORLD
-    iproc = comm_world.Get_rank()
-    nproc = comm_world.Get_size()
-    lparallel = True
-except ImportError:
-    comm_world = None
-    iproc = 0
-    nproc = 1
-    lparallel = False
-
 # http://stackoverflow.com/questions/50499/in-python-how-do-i-get-the-path-and-name-of-the-file-t
 mewarpx_dir = os.path.dirname(os.path.abspath(
     inspect.getfile(inspect.currentframe())))

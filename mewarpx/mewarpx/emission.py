@@ -77,12 +77,12 @@ class Injector(object):
         if not unique_particles:
             return npart_total
 
-        npart = npart_total // mwxutil.nproc
+        npart = npart_total // mwxrun.n_procs
 
         # Early-numbered processors add one additional particle if needed.
         # Particles get re-distributed between processors after injection, so
         # this shouldn't load-imbalance anything.
-        if mwxutil.iproc < (npart_total % mwxutil.nproc):
+        if mwxrun.me < (npart_total % mwxrun.n_procs):
             npart += 1
 
         return npart

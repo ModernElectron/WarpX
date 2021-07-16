@@ -18,7 +18,6 @@ import mewarpx.mwxconstants as constants
 
 P_INERT = 2.0 # torr
 T_INERT = 300.0 # K
-torr_to_pascals = 102325/760
 N_INERT = (P_INERT * constants.torr_SI) / (constants.kb_J * T_INERT) # m^-3
 
 D_CA = 1e-4 # m

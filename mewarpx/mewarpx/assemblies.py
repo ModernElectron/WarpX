@@ -1,5 +1,5 @@
 """
-Placeholder for assembly implementations.
+Assembly implementations
 """
 
 
