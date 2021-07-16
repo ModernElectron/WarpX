@@ -2,6 +2,7 @@
 Placeholder for assembly implementations.
 """
 
+from mewarpx.mwxrun import mwxrun
 from pywarpx import picmi
 
 class Assembly(object):
@@ -12,7 +13,7 @@ class Assembly(object):
     used for these fields.
     """
 
-    def __init__(self, V, T, WF, name):
+    def __init__(self, V, T, WF, name, install_in_fieldsolver=True):
         """Basic initialization.
 
         Arguments:
@@ -20,11 +21,14 @@ class Assembly(object):
             T (float): Temperature (K)
             WF (float): Work function (eV)
             name (str): Assembly name
+            install_in_fieldsolver (float): If True and the Assembly is an
+                embedded boundary it will be included in the WarpX fieldsolver
         """
         self.V = V
         self.T = T
         self.WF = WF
         self.name = name
+        self.install_in_fieldsolver = install_in_fieldsolver
 
     def getvoltage(self):
         """Allows for time-dependent implementations to override this."""
@@ -55,6 +59,25 @@ class ZPlane(Assembly):
         if self.zsign not in [-1, 1]:
             raise ValueError("self.zsign = {} is not either -1 or 1.".format(
                 self.zsign))
+
+
+class Cathode(ZPlane):
+    """A basic wrapper to define a semi-infinite plane for the cathode."""
+
+    def __init__(self, V, T, WF):
+        super(Cathode, self).__init__(
+            z=0, zsign=-1, V=V, T=T, WF=WF, name="Cathode"
+        )
+
+
+class Anode(ZPlane):
+    """A basic wrapper to define a semi-infinite plane for the anode."""
+
+    def __init__(self, z, V, T, WF):
+        super(Anode, self).__init__(
+            z=z, zsign=1, V=V, T=T, WF=WF, name="Anode"
+        )
+
 
 class Cylinder(Assembly):
     """A finite Cylinder """
@@ -87,10 +110,18 @@ class Cylinder(Assembly):
         self.direction = direction
         self.has_fluid_inside = has_fluid_inside
 
-    def get_picmi_object(self):
-        return picmi.EmbeddedBoundary(
+        if self.install_in_fieldsolver:
+            self._install_in_fieldsolver()
+
+    def _install_in_fieldsolver(self):
+        """Function to pass this EB object to the WarpX simulation."""
+
+        if mwxrun.simulation.embedded_boundary is not None:
+            raise RuntimeError('Currently only 1 EB is supported.')
+
+        mwxrun.simulation.embedded_boundary = picmi.EmbeddedBoundary(
             geom_type="cylinder", cylinder_center=self.center,
             cylinder_radius=self.radius, cylinder_height=self.height,
-            cylinder_direction=self.direction, has_fluid_inside=self.has_fluid_inside,
-            potential=self.V
+            cylinder_direction=self.direction, potential=self.V,
+            has_fluid_inside=self.has_fluid_inside
         )

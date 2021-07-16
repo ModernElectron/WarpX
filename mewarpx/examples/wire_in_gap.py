@@ -110,13 +110,11 @@ cylinder = assemblies.Cylinder(
     WF=4.7, name="Wire"
 )
 
-mwxrun.simulation.embedded_boundary = cylinder.get_picmi_object()
-
 ##########################
 # numerics components
 ##########################
-anode = assemblies.Assembly(VOLTAGE, 1300, 1.3, "Anode")
-cathode = assemblies.Assembly(VOLTAGE, 300, 1.5, "Cathode")
+cathode = assemblies.Cathode(V=VOLTAGE, T=1300, WF=3.5)
+anode = assemblies.Anode(z=zmax, V=VOLTAGE, T=300, WF=2.3)
 
 grid = picmi.Cartesian2DGrid(
     number_of_cells = [nx, nz],
@@ -222,6 +220,7 @@ if mwxrun.me == 0:
             aspect='auto'
         )
         plt.colorbar(c)
+        plt.savefig('wire_in_gap.png')
         plt.show()
 
     except IndexError:
