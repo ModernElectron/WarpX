@@ -179,7 +179,7 @@ class DiodeRun_V1(object):
         print('  Total time = %.3e s (%i timesteps)'
               % (self.TOTAL_TIMESTEPS * self.DT, self.TOTAL_TIMESTEPS))
         print('  Diag time = %.3e s (%i timesteps)'
-              % (self.DIAG_INTERVAL, self.DIAG_STEPS))
+              % (self.DIAG_STEPS * self.DT, self.DIAG_STEPS))
 
         # Default null values
         if self.SPECIES is None:
@@ -568,7 +568,7 @@ class DiodeRun_V1(object):
 
     def init_field_diag(self):
         print('### Init Diode FieldDiag ###')
-        diagnostic_intervals = "::%i" % self.DIAG_INTERVAL
+        diagnostic_intervals = "::%i" % self.DIAG_STEPS
         self.field_diag = picmi.FieldDiagnostic(
             name='diags',
             grid=self.grid,
@@ -589,7 +589,7 @@ class DiodeRun_V1(object):
         mwxrun.simulation.max_steps = self.TOTAL_TIMESTEPS
 
         # Add particle species if any were defined
-        if self.SPECIES is not None:
+        if len(self.SPECIES) > 0:
             if self.NUMBER_PARTICLES_PER_CELL is None:
                 raise ValueError("NUMBER_PARTICLES_PER_CELL cannot be None")
             for species in self.SPECIES:
