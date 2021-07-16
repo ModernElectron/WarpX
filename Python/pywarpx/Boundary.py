@@ -1,4 +1,4 @@
-# Copyright 2021 Modern Electron
+# Copyright 2021 Roelof Groenewald
 #
 # This file is part of WarpX.
 #
@@ -7,4 +7,3 @@
 from .Bucket import Bucket
 
 boundary = Bucket('boundary')
-embedded_boundary = Bucket('eb2')
