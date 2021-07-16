@@ -80,23 +80,18 @@ class Anode(ZPlane):
 
 
 class Cylinder(Assembly):
-    """A finite Cylinder """
+    """An infinitely long Cylinder pointing in the y-direction."""
 
-    def __init__(self, center, height, radius, direction,
-                 has_fluid_inside, V, T, WF, name):
+    def __init__(self, center_x, center_z, radius, V, T, WF, name):
 
         """Basic initialization.
 
         Arguments:
-            center_x (string): The coordinates of the center of the cylinder. In the
-                format of "x y z" for 3D or "x y" or "x z" for 2D. Coordinates are in (m)
-            height (float): The full height (or length) of the cylinder (m)
+            center_x (float): The x-coordinates of the center of the cylinder.
+                Coordinates are in (m)
+            center_z (float): The z-coordinates of the center of the cylinder.
+                Coordinates are in (m)
             radius (float): The radius of the cylinder (m)
-            direction (int): The axis that the cylinder is aligned to. If this EB is in 3D
-                then 0=x, 1=y, 2=z. If working in 2D as XY then 0=x, 1=y. If working in 2D
-                as XZ then 0=x,1=Z.
-            has_fluid_inside (boolean): Whether or not the EB object should be considered
-                an object in free space or as a hole in an infinite conductor.
             V (float): Voltage (V)
             T (float): Temperature (K)
             WF (float): Work function (eV)
@@ -104,11 +99,13 @@ class Cylinder(Assembly):
         """
         super(Cylinder, self).__init__(V=V, T=T, WF=WF, name=name)
 
-        self.center = center
-        self.height = height
+        self.center_x = center_x
+        self.center_z = center_z
         self.radius = radius
-        self.direction = direction
-        self.has_fluid_inside = has_fluid_inside
+
+        self.implicit_function = (
+            f"-((x-{self.center_x})**2+(z-{self.center_z})**2-{self.radius}**2)"
+        )
 
         if self.install_in_fieldsolver:
             self._install_in_fieldsolver()
@@ -120,8 +117,6 @@ class Cylinder(Assembly):
             raise RuntimeError('Currently only 1 EB is supported.')
 
         mwxrun.simulation.embedded_boundary = picmi.EmbeddedBoundary(
-            geom_type="cylinder", cylinder_center=self.center,
-            cylinder_radius=self.radius, cylinder_height=self.height,
-            cylinder_direction=self.direction, potential=self.V,
-            has_fluid_inside=self.has_fluid_inside
+            implicit_function=self.implicit_function,
+            potential=self.V
         )

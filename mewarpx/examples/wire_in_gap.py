@@ -104,10 +104,8 @@ mcc_wrapper = MCC(
 
 # Embedded Boundary
 cylinder = assemblies.Cylinder(
-    center="0.25e-3 0.25e-3", height=1,
-    radius=100e-6, direction=2,
-    has_fluid_inside=False, V=-2.0, T=300,
-    WF=4.7, name="Wire"
+    center_x=0.25e-3, center_z=0.25e-3, radius=100e-6,
+    V=-2.0, T=300, WF=4.7, name="Wire"
 )
 
 ##########################
@@ -203,8 +201,7 @@ if mwxrun.me == 0:
     import matplotlib.pyplot as plt
 
     try:
-        datafolder = sorted(glob.glob('diags/diags*'))[-1]
-
+        datafolder = 'diags/diags00005'
         print('Reading ', datafolder, '\n')
         ds = yt.load( datafolder )
         grid_data = ds.covering_grid(
