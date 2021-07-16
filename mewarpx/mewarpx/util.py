@@ -38,8 +38,8 @@ def init_libwarpx(ndim, rz):
 
 def get_velocities(num_samples, T, m, emission_type='thermionic',
                    transverse_fac=1.0, rseed=None):
-
     """Generate array of random [vx, vy, vz] for cathode-emitted electrons.
+
     Arguments:
         num_samples (int): Number of particles to generate velocities for
         T (float): Temperature for the electrons (usually material temp) (K)
@@ -55,11 +55,11 @@ def get_velocities(num_samples, T, m, emission_type='thermionic',
         rseed (positive int): If specified, seed the random number generator.
             Used for testing. The random number generator is set back at the
             end of the function.
+
     Returns:
         velocities (np.ndarray): array of shape (num_samples, 3) with (vx, vy,
         vz) for each electron.
     """
-
     if (emission_type != 'thermionic') and not np.isclose(transverse_fac, 1.0):
         return ValueError('transverse_fac is a support argument only for '
                           + 'thermionic emissiion models!')
@@ -106,10 +106,10 @@ def get_velocities(num_samples, T, m, emission_type='thermionic',
 
 def get_positions(num_samples, xmin, xmax, ymin=0, ymax=0, z=0,
                   rseed=None):
-
     """Provide random samples of [x, y, z] for electrons in simulation.
     In x and y, positions are uniformly distributed. In z, positions are
     placed at the emitter.
+
     Arguments:
         num_samples (int): Number of particles to generate positions for
         xmin (float): Min position in x (meters)
@@ -120,6 +120,7 @@ def get_positions(num_samples, xmin, xmax, ymin=0, ymax=0, z=0,
         rseed (positive int): If specified, seed the random number generator.
             Used for testing. The random number generator is set back at the
             end of the function.
+
     Returns:
         positions (np.ndarray): Array of shape (num_samples, 3) with positions.
     """
@@ -171,10 +172,12 @@ def J_RD(T, WF, A):
     """Returns the Richardson-Dushmann thermionic emission given a temperature
     and effective work function. Constant coefficient of emission (A) is
     assumed.
+
     Arguments:
         T (float): temperature of the cathode in K
         WF (float): work function of the cathode in eV
         A (float): coefficient of emission in Amp/cm^2/K^2
+
     Returns:
         J (float): current density in Amp/cm^2
     """
