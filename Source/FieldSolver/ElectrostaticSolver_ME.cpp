@@ -4,8 +4,32 @@
  *
  * License: BSD-3-Clause-LBNL
  */
+#include "WarpX.H"
 
-#include <AMReX_ParallelDescriptor.H>
+#include "Parallelization/GuardCellManager.H"
+#include "Particles/MultiParticleContainer.H"
+#include "Particles/WarpXParticleContainer.H"
+#include "Utils/WarpXAlgorithmSelection.H"
+#include "Utils/WarpXConst.H"
+#include "Utils/WarpXUtil.H"
+
+#include <AMReX_Array.H>
+#include <AMReX_Array4.H>
+#include <AMReX_BLassert.H>
+#include <AMReX_Box.H>
+#include <AMReX_BoxArray.H>
+#include <AMReX_Config.H>
+#include <AMReX_DistributionMapping.H>
+#include <AMReX_FArrayBox.H>
+#include <AMReX_FabArray.H>
+#include <AMReX_Geometry.H>
+#include <AMReX_GpuControl.H>
+#include <AMReX_GpuLaunch.H>
+#include <AMReX_GpuQualifiers.H>
+#include <AMReX_IndexType.H>
+#include <AMReX_IntVect.H>
+#include <AMReX_LO_BCTYPES.H>
+#include <AMReX_MFIter.H>
 #include <AMReX_MLMG.H>
 #ifdef WARPX_DIM_RZ
 #    include <AMReX_MLNodeLaplacian.H>
@@ -15,13 +39,16 @@
 #        include <AMReX_MLEBNodeFDLaplacian.H>
 #    endif
 #endif
+#include <AMReX_MultiFab.H>
+#include <AMReX_ParmParse.H>
+#include <AMReX_Parser.H>
 #include <AMReX_REAL.H>
+#include <AMReX_SPACE.H>
+#include <AMReX_Vector.H>
 
-#include <WarpX.H>
-
+#include <array>
 #include <memory>
-
-#include "Utils/WarpXAlgorithmSelection.H"
+#include <string>
 
 using namespace amrex;
 
@@ -349,7 +376,7 @@ WarpX::computePhiCartesian (const amrex::Vector<std::unique_ptr<amrex::MultiFab>
     ParmParse pp_embedded_boundary("warpx");
     pp_embedded_boundary.query("eb_potential(t)", potential_eb_str);
     auto parser_eb = makeParser(potential_eb_str, {"t"});
-    linop.setEBDirichlet( parser_eb.eval(gett_new(0)) );
+    linop.setEBDirichlet( parser_eb.compile<1>()(gett_new(0)) );
 #endif
 
     // Set domain boundary conditions
@@ -484,9 +511,11 @@ WarpX::getPhiBC( const int idim, amrex::Real &pot_lo, amrex::Real &pot_hi ) cons
 #endif
 
     auto parser_lo = makeParser(potential_lo_str, {"t"});
-    pot_lo = parser_lo.eval(gett_new(0));
+    auto parser_lo_exe = parser_lo.compileHost<1>();
+    pot_lo = parser_lo_exe(gett_new(0));
     auto parser_hi = makeParser(potential_hi_str, {"t"});
-    pot_hi = parser_hi.eval(gett_new(0));
+    auto parser_hi_exe = parser_hi.compileHost<1>();
+    pot_hi = parser_hi_exe(gett_new(0));
 }
 
 /* \bried Compute the electric field that corresponds to `phi`, and
