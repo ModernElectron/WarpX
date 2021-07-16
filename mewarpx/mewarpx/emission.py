@@ -1,5 +1,5 @@
 """
-Files for arbitrary emission in WarpX.
+Module for various types of particle emission in WarpX.
 """
 
 import logging
