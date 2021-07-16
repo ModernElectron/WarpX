@@ -349,7 +349,7 @@ WarpX::computePhiCartesian (const amrex::Vector<std::unique_ptr<amrex::MultiFab>
     ParmParse pp_embedded_boundary("warpx");
     pp_embedded_boundary.query("eb_potential(t)", potential_eb_str);
     auto parser_eb = makeParser(potential_eb_str, {"t"});
-    linop.setEBDirichlet( parser_eb.compile<1>()(gett_new(0)) );
+    linop.setEBDirichlet( parser_eb.eval(gett_new(0)) );
 #endif
 
     // Set domain boundary conditions
