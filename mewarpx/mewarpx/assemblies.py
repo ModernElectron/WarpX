@@ -13,7 +13,7 @@ class Assembly(object):
     used for these fields.
     """
 
-    def __init__(self, V, T, WF, name, install_in_fieldsolver=True):
+    def __init__(self, V, T, WF, name):
         """Basic initialization.
 
         Arguments:
@@ -21,14 +21,11 @@ class Assembly(object):
             T (float): Temperature (K)
             WF (float): Work function (eV)
             name (str): Assembly name
-            install_in_fieldsolver (float): If True and the Assembly is an
-                embedded boundary it will be included in the WarpX fieldsolver
         """
         self.V = V
         self.T = T
         self.WF = WF
         self.name = name
-        self.install_in_fieldsolver = install_in_fieldsolver
 
     def getvoltage(self):
         """Allows for time-dependent implementations to override this."""
@@ -82,7 +79,8 @@ class Anode(ZPlane):
 class Cylinder(Assembly):
     """An infinitely long Cylinder pointing in the y-direction."""
 
-    def __init__(self, center_x, center_z, radius, V, T, WF, name):
+    def __init__(self, center_x, center_z, radius, V, T, WF, name,
+                 install_in_fieldsolver=True):
         """Basic initialization.
 
         Arguments:
@@ -95,6 +93,8 @@ class Cylinder(Assembly):
             T (float): Temperature (K)
             WF (float): Work function (eV)
             name (str): Assembly name
+            install_in_fieldsolver (float): If True and the Assembly is an
+                embedded boundary it will be included in the WarpX fieldsolver
         """
         super(Cylinder, self).__init__(V=V, T=T, WF=WF, name=name)
 
@@ -106,7 +106,7 @@ class Cylinder(Assembly):
             f"-((x-{self.center_x})**2+(z-{self.center_z})**2-{self.radius}**2)"
         )
 
-        if self.install_in_fieldsolver:
+        if install_in_fieldsolver:
             self._install_in_fieldsolver()
 
     def _install_in_fieldsolver(self):
