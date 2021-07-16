@@ -135,11 +135,11 @@ cathode = assemblies.ZPlane(z=1e-10, zsign=-1, V=0, T=T_cathode,
                             WF=WF_cathode,
                             name='cathode')
 emitter = emission.ZPlaneEmitter(conductor=cathode, T=T_cathode,
-                                use_Schottky=False)
+                                 use_Schottky=False)
 injector = emission.ThermionicInjector(emitter=emitter, species=electrons,
-                                        npart_per_cellstep=50,
-                                        T=T_cathode, WF=WF_cathode,
-                                        A=6e5)
+                                       npart_per_cellstep=50,
+                                       T=T_cathode, WF=WF_cathode,
+                                       A=6e5)
 
 ####################################
 # Add ME diagnostic

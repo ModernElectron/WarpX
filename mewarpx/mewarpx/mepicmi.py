@@ -19,7 +19,8 @@ class Species(picmi.Species):
         charge/mass) that are always floats.
         """
         self.grid = kw.pop("warpx_grid", None)
-        self.n_macroparticle_per_cell = kw.pop("warpx_n_macroparticle_per_cell", [0, 0])
+        self.n_macroparticle_per_cell = kw.pop(
+            "warpx_n_macroparticle_per_cell", [0, 0])
 
         super(Species, self).init(kw)
 

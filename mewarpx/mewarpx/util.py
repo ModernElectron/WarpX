@@ -51,7 +51,7 @@ def init_libwarpx(ndim, rz):
 
 
 def get_velocities(num_samples, T, m, emission_type='thermionic',
-                    transverse_fac=1.0, rseed=None):
+                   transverse_fac=1.0, rseed=None):
 
     """Generate array of random [vx, vy, vz] for cathode-emitted electrons.
     Arguments:
@@ -76,7 +76,7 @@ def get_velocities(num_samples, T, m, emission_type='thermionic',
 
     if (emission_type != 'thermionic') and not np.isclose(transverse_fac, 1.0):
         return ValueError('transverse_fac is a support argument only for '
-                            + 'thermionic emissiion models!')
+                          + 'thermionic emissiion models!')
 
     if rseed is not None:
         nprstate = np.random.get_state()
@@ -119,7 +119,7 @@ def get_velocities(num_samples, T, m, emission_type='thermionic',
 
 
 def get_positions(num_samples, xmin, xmax, ymin=0, ymax=0, z=0,
-                rseed=None):
+                  rseed=None):
 
     """Provide random samples of [x, y, z] for electrons in simulation.
     In x and y, positions are uniformly distributed. In z, positions are
@@ -150,6 +150,7 @@ def get_positions(num_samples, xmin, xmax, ymin=0, ymax=0, z=0,
         np.random.set_state(nprstate)
 
     return x, y, z
+
 
 # https://stackoverflow.com/questions/600268/mkdir-p-functionality-in-python
 def mkdir_p(path):
