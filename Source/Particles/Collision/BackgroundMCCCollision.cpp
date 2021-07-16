@@ -76,6 +76,7 @@ BackgroundMCCCollision::BackgroundMCCCollision (std::string const collision_name
             std::string secondary_species;
             pp.get("ionization_species", secondary_species);
             m_species_names.push_back(secondary_species);
+
             m_ionization_processes.push_back(std::move(process));
         } else {
             m_scattering_processes.push_back(std::move(process));
@@ -142,7 +143,6 @@ void
 BackgroundMCCCollision::doCollisions (amrex::Real cur_time, MultiParticleContainer* mypc)
 {
     WARPX_PROFILE("BackgroundMCCCollision::doCollisions()");
-
     using namespace amrex::literals;
 
     const amrex::Real dt = WarpX::GetInstance().getdt(0);

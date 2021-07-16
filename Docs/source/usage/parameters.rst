@@ -1224,42 +1224,6 @@ Plasma Science, vol. 19, no. 2, pp. 65-85, 1991) <https://ieeexplore.ieee.org/do
     produced species must also be given. For example if argon properties is used
     for the background gas, a species of argon ions should be specified here.
 
-* ``<collision_name>.background_density`` (`float`)
-    Only for ``background_mcc``. The density of the neutral background gas in :math:`m^{-3}`.
-
-* ``<collision_name>.background_temperature`` (`float`)
-    Only for ``background_mcc``. The temperature of the neutral background gas in Kelvin.
-
-* ``<collision_name>.background_mass`` (`float`) optional
-    Only for ``background_mcc``. The mass of the background gas in kg. If not
-    given the mass of the colliding species will be used unless ionization is
-    included in which case the mass of the product species will be used.
-
-* ``<collision_name>.scattering_processes`` (`strings` separated by spaces)
-    Only for ``background_mcc``. The MCC scattering processes that should be
-    included. Available options are ``elastic``, ``back`` & ``charge_exchange``
-    for ions and ``elastic``, ``excitationX`` & ``ionization`` for electrons.
-    Multiple excitation events can be included for electrons corresponding to
-    excitation to different levels, the ``X`` above can be changed to a unique
-    identifier for each excitation process. For each scattering process specified
-    a path to a cross-section data file must  also be given. We use
-    ``<scattering_process>`` as a placeholder going forward.
-
-* ``<collision_name>.<scattering_process>_cross_section`` (`string`)
-    Only for ``background_mcc``. Path to the file containing cross-section data
-    for the given scattering processes. The cross-section file must have exactly
-    2 columns of data, the first containing equally spaced energies in eV and the
-    second the corresponding cross-section in :math:`m^2`.
-
-* ``<collision_name>.<scattering_process>_energy`` (`float`)
-    Only for ``background_mcc``. If the scattering process is either
-    ``excitationX`` or ``ionization`` the energy cost of that process must be given in eV.
-
-* ``<collision_name>.ionization_species`` (`float`)
-    Only for ``background_mcc``. If the scattering process is ``ionization`` the
-    produced species must also be given. For example if argon properties is used
-    for the background gas, a species of argon ions should be specified here.
-
 .. _running-cpp-parameters-numerics:
 
 Numerics and algorithms
