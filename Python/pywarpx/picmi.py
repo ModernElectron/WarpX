@@ -749,36 +749,21 @@ class MCCCollisions(object):
                     val = val.name
                 collision.add_new_attr(process+'_'+key, val)
 
-class EmbeddedBoundary(object):
-    """Custom class to handle set up of embedded boundaries in WarpX"""
 
-    def __init__(self, geom_type=None, has_fluid_inside=None,
-                 potential=None, **kwargs):
-        self.geom_type = geom_type
-        self.has_fluid_inside = has_fluid_inside
+class EmbeddedBoundary(picmistandard.base._ClassWithInit):
+    """Custom class to handle set up of embedded boundaries in WarpX.  If
+    embedded boundary initialization is added to picmistandard this can be
+    changed to inherit that functionality."""
+
+    def __init__(self, implicit_function, potential=None, **kw):
+        self.implicit_function = implicit_function
         self.potential = potential
-        self.kwargs = kwargs
+
+        self.handle_init(kw)
 
     def initialize_inputs(self):
-
-        pywarpx.embedded_boundary.geom_type = self.geom_type
-        pywarpx.embedded_boundary.potential = self.potential
-
-        if self.geom_type == "box":
-            pywarpx.embedded_boundary.box_lo =  self.kwargs.pop('box_lo')
-            pywarpx.embedded_boundary.box_hi = self.kwargs.pop('box_hi')
-            pywarpx.embedded_boundary.box_has_fluid_inside = self.has_fluid_inside
-        elif self.geom_type == "cylinder":
-            pywarpx.embedded_boundary.cylinder_center =  self.kwargs.pop('cylinder_center')
-            pywarpx.embedded_boundary.cylinder_radius = self.kwargs.pop('cylinder_radius')
-            pywarpx.embedded_boundary.cylinder_height = self.kwargs.pop('cylinder_height')
-            pywarpx.embedded_boundary.cylinder_direction = self.kwargs.pop('cylinder_direction')
-            pywarpx.embedded_boundary.cylinder_has_fluid_inside = self.has_fluid_inside
-#       elif self.geom_type is None:
-#       add functionality for this case
-
-        if len(self.kwargs) > 0:
-            raise AttributeError('Unused kwargs: ', self.kwargs)
+        pywarpx.warpx.eb_implicit_function = self.implicit_function
+        pywarpx.warpx.__setattr__('eb_potential(t)', self.potential)
 
 
 class Simulation(picmistandard.PICMI_Simulation):
