@@ -83,7 +83,6 @@ class Cylinder(Assembly):
     """An infinitely long Cylinder pointing in the y-direction."""
 
     def __init__(self, center_x, center_z, radius, V, T, WF, name):
-
         """Basic initialization.
 
         Arguments:
