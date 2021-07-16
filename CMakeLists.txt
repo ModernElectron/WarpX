@@ -269,10 +269,6 @@ elseif(WarpX_DIMS STREQUAL RZ)
     target_compile_definitions(WarpX PUBLIC WARPX_DIM_RZ)
 endif()
 
-if(WarpX_EB)
-    target_compile_definitions(WarpX PUBLIC AMREX_USE_EB)
-endif()
-
 if(WarpX_GPUCLOCK)
     target_compile_definitions(WarpX PUBLIC WARPX_USE_GPUCLOCK)
 endif()
