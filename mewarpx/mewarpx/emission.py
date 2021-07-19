@@ -412,7 +412,6 @@ class ThermionicInjector(Injector):
         # they're actually used as momenta including the particle mass -
         # the actual update is in Source/Particles/Pusher/UpdatePosition.H
 
-        print(f"This is particles_dict: {particles_dict}")
         _libwarpx.add_particles(
             species_number=self.species.species_number,
             x=particles_dict['x'],
@@ -931,14 +930,9 @@ class ArbitraryEmitter2D(Emitter):
         Z = Z.flatten()
 
         np.set_printoptions(threshold=np.inf)
-        # print(f"This is X: {X}")
-        # print(f"This is Y: {Y}")
-        # print(f"This is Z: {Z}")
         inside = np.reshape(
             self.conductor.isinside(X, Y, Z, aura=self.dA/5.),
             oshape)
-
-        # print(f"this is inside {inside}", flush=True)
 
         self.contours = np.squeeze(skimage.measure.find_contours(
             inside, 0.5))
@@ -995,12 +989,16 @@ class ArbitraryEmitter2D(Emitter):
         # Draw Random Numbers to determine which face to emit from
         self.contour_idx = np.searchsorted(self.CDF, np.random.rand(npart))
 
+        vels = np.column_stack(mwxutil.get_velocities(num_samples=npart, T=self.T, m=m,
+                                                        rseed=rseedv,
+                                                        transverse_fac=self.transverse_fac,
+                                                        emission_type=self.emission_type))
+
         # Rotate velocities based on angle of normal
-        vx, vy, vz = mwxutil.get_velocities(num_samples=npart, T=self.T, m=m,
-                                    rseed=rseedv,
-                                    transverse_fac=self.transverse_fac,
-                                    emission_type=self.emission_type)
-        vels = np.column_stack((vx, vy, vz))
+        newvels = self.convert_vel_zhat_nhat(vels, self.normal)
+        vx = np.asarray(newvels[:, 0], order="C")
+        vy = np.asarray(newvels[:, 1], order="C")
+        vz = np.asarray(newvels[:, 2], order="C")
 
         # Now get positions
         pos1 = self.contours[self.contour_idx, :]
