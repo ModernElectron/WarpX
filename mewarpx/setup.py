@@ -7,11 +7,14 @@ import setuptools
 requires = [
     "numpy",
     "scipy",
+    "psutil",
+    "pandas",
+    "yt"
 ]
 
 extras = {
     "tests": ["pytest", "pytest-cov", "pytest-xdist"],
-    # "docs": ["sphinx", "mock", "sphinx_rtd_theme"],
+    "docs": ["sphinx", "mock", "sphinx_rtd_theme"],
     # "aws": ["awscli", "boto3", "s3fs"]
 }
 # http://stackoverflow.com/questions/19096155/setuptools-and-pip-choice-of-minimal-and-complete-install
@@ -47,7 +50,7 @@ setuptools.setup(
         "A set of tools for running and postprocessing WarpX simulations with "
         "additional thermionic-related capabilities."
     ),
-    long_description=open('README.rst').read(),
+    long_description=open(os.path.join(here, 'README.rst')).read(),
 
     packages=setuptools_packages,
 

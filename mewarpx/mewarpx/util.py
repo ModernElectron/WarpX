@@ -1,6 +1,7 @@
 """
 Utility functions for mewarpx.
 """
+import errno
 import inspect
 import os
 
@@ -8,6 +9,7 @@ import numpy as np
 import minerva.util as minutil
 
 from pywarpx import geometry
+from mewarpx import mwxconstants as constants
 
 # Pass comm_world to sim.step(<steps>, <comm_world>) to send comm_world to amrex
 
@@ -47,6 +49,35 @@ def init_libwarpx(ndim, rz):
     # This just quiets linters like pyflakes by using the otherwise-unused
     # variable
     assert pywarpx._libwarpx
+
+
+# https://stackoverflow.com/questions/600268/mkdir-p-functionality-in-python
+def mkdir_p(path):
+    """Make directory and parent directories if they don't exist.
+
+    Do not throw error if all directories already exist.
+    """
+    try:
+        os.makedirs(path)
+    except OSError as exc:
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else:
+            raise
+
+
+def ideal_gas_density(p, T):
+    """Calculate neutral gas density (in 1/cm^3) from the ideal gas law using
+    pressure in Torr.
+
+    Arguments:
+        p (float): Gas pressure (Torr)
+        T (float): Mean gas temperature (K)
+
+    Returns:
+        N (float): Number density of gas atoms/molecules (1/cm^3)
+    """
+    return (p * constants.torr_cgs) / (constants.kb_cgs * T)
 
 
 def get_velocities(num_samples, T, m, emission_type='thermionic',

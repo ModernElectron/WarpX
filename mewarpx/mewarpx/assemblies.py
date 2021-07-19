@@ -1,9 +1,6 @@
 import numpy as np
-
-"""
-Placeholder for assembly implementations.
-"""
-
+from mewarpx.mwxrun import mwxrun
+from pywarpx import picmi
 
 class Assembly(object):
 
@@ -54,14 +51,34 @@ class ZPlane(Assembly):
 
         self.zsign = int(round(zsign))
         if self.zsign not in [-1, 1]:
-            raise ValueError("self.zsign = {} is not either -1 or 1.".format(
-                self.zsign))
+            raise ValueError(f"self.zsign = {self.zsign} is not either -1 or 1.")
+
+
+class Cathode(ZPlane):
+    """A basic wrapper to define a semi-infinite plane for the cathode."""
+
+    def __init__(self, V, T, WF):
+        super(Cathode, self).__init__(
+            z=0, zsign=-1, V=V, T=T, WF=WF, name="Cathode"
+        )
+
+
+class Anode(ZPlane):
+    """A basic wrapper to define a semi-infinite plane for the anode."""
+
+    def __init__(self, z, V, T, WF):
+        super(Anode, self).__init__(
+            z=z, zsign=1, V=V, T=T, WF=WF, name="Anode"
+        )
 
 
 class Cylinder(Assembly):
-    """A finite Cylinder """
-    def __init__(self, center_x, center_z, radius, V, T, WF, name):
+    """An infinitely long Cylinder pointing in the y-direction."""
+
+    def __init__(self, center_x, center_z, radius, V, T, WF, name,
+                 install_in_fieldsolver=True):
         """Basic initialization.
+
         Arguments:
             center_x (float): The x-coordinates of the center of the cylinder.
                 Coordinates are in (m)
@@ -72,6 +89,8 @@ class Cylinder(Assembly):
             T (float): Temperature (K)
             WF (float): Work function (eV)
             name (str): Assembly name
+            install_in_fieldsolver (bool): If True and the Assembly is an
+                embedded boundary it will be included in the WarpX fieldsolver
         """
         super(Cylinder, self).__init__(V=V, T=T, WF=WF, name=name)
         # Y is always treated as the height
@@ -79,10 +98,18 @@ class Cylinder(Assembly):
         self.center_z = center_z
         self.height = 1 # m
         self.radius = radius
+        self.implicit_function = (
+            f"-((x-{self.center_x})**2+(z-{self.center_z})**2-{self.radius}**2)"
+        )
+
+        if install_in_fieldsolver:
+            self._install_in_fieldsolver()
+
 
     def isinside(self, X, Y, Z, aura):
         """
         Calculates which grid tiles are within the cylinder.
+
         Arguments:
             X (np.ndarray): array of x coordinates of flattened grid.
             Y (np.ndarray): array of y coordinates of flattened grid.
@@ -90,6 +117,7 @@ class Cylinder(Assembly):
             aura (float): extra space around the conductor that is considered inside. Useful
                 for small, thin conductors that don't overlap any grid points. In
                 units of meters.
+
         Returns:
             result (np.ndarray): array of flattened grid where all tiles
                 inside the cylinder are 1, and other tiles are 0.
@@ -117,3 +145,14 @@ class Cylinder(Assembly):
         nhat[0, :] = (px - self.center_x) / dist
         nhat[2, :] = (pz - self.center_z) / dist
         return nhat
+
+    def _install_in_fieldsolver(self):
+        """Function to pass this EB object to the WarpX simulation."""
+
+        if mwxrun.simulation.embedded_boundary is not None:
+            raise RuntimeError('Currently only 1 EB is supported.')
+
+        mwxrun.simulation.embedded_boundary = picmi.EmbeddedBoundary(
+            implicit_function=self.implicit_function,
+            potential=self.V
+        )
