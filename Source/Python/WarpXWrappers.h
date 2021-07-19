@@ -12,6 +12,8 @@
 #include <AMReX_Config.H>
 #include <AMReX_REAL.H>
 
+#include <string>
+
 #ifdef AMREX_USE_MPI
 #   include <mpi.h>
 #endif
@@ -117,8 +119,9 @@ extern "C" {
   int warpx_getMyProc ();
   int warpx_getNProcs ();
 
-
   void mypc_Redistribute ();
+
+  amrex::Real eval_expression_t (std::string expr);
 
 #ifdef __cplusplus
 }

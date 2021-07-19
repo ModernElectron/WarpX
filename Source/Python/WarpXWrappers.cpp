@@ -32,6 +32,7 @@
 #include <AMReX_StructOfArrays.H>
 
 #include <array>
+#include <string>
 #include <cstdlib>
 
 namespace
@@ -505,6 +506,22 @@ extern "C"
     void mypc_Redistribute () {
         auto & mypc = WarpX::GetInstance().GetPartContainer();
         mypc.Redistribute();
+    }
+
+    amrex::Real eval_expression_t ( std::string expr ) {
+                                  //amrex::Vector<std::string> params ) {
+        WarpX& warpx = WarpX::GetInstance();
+
+        auto parser = makeParser(expr, {"t"});
+        auto parser_exe = parser.compileHost<1>();
+        amrex::Real val = parser_exe(warpx.gett_new(0));
+        return val;
+
+        // **in general we'd like to do something like this, but
+        // the sticky part is having to pass all the variable values
+        // to parser_exe when evaluating the expression:
+        // auto parser = makeParser(expr, {"t"}) //params)
+        // auto parser_exe = parser.compileHost<params.size()>();
     }
 
 }
