@@ -411,6 +411,8 @@ class ThermionicInjector(Injector):
         # and they're referred to as momenta. But I don't see anywhere
         # they're actually used as momenta including the particle mass -
         # the actual update is in Source/Particles/Pusher/UpdatePosition.H
+
+        print(f"This is particles_dict: {particles_dict}")
         _libwarpx.add_particles(
             species_number=self.species.species_number,
             x=particles_dict['x'],
@@ -928,14 +930,18 @@ class ArbitraryEmitter2D(Emitter):
         Y = Y.flatten()
         Z = Z.flatten()
 
-        # TODO: implement isinside function in Cylinder
-        # inside = np.reshape(
-        #     self.conductor.isinside(X, Y, Z, aura=self.dA/5.).isinside,
-        #     oshape)
+        np.set_printoptions(threshold=np.inf)
+        # print(f"This is X: {X}")
+        # print(f"This is Y: {Y}")
+        # print(f"This is Z: {Z}")
+        inside = np.reshape(
+            self.conductor.isinside(X, Y, Z, aura=self.dA/5.),
+            oshape)
+
+        # print(f"this is inside {inside}", flush=True)
 
         self.contours = np.squeeze(skimage.measure.find_contours(
             inside, 0.5))
-
         self.contours[:, 0] = np.interp(self.contours[:, 0],
                                         np.arange(self.xvec.size),
                                         self.xvec)
@@ -990,12 +996,11 @@ class ArbitraryEmitter2D(Emitter):
         self.contour_idx = np.searchsorted(self.CDF, np.random.rand(npart))
 
         # Rotate velocities based on angle of normal
-        v_coords = self.convert_vel_zhat_nhat(
-            mwxutil.get_velocities(num_samples=npart, T=self.T, m=m,
+        vx, vy, vz = mwxutil.get_velocities(num_samples=npart, T=self.T, m=m,
                                     rseed=rseedv,
                                     transverse_fac=self.transverse_fac,
-                                    emission_type=self.emission_type),
-            self.normal[self.contour_idx])
+                                    emission_type=self.emission_type)
+        vels = np.column_stack((vx, vy, vz))
 
         # Now get positions
         pos1 = self.contours[self.contour_idx, :]
@@ -1003,20 +1008,14 @@ class ArbitraryEmitter2D(Emitter):
                      (np.tile(np.random.rand(npart), (2, 1)).T
                       * self.dvec[self.contour_idx, :]))
 
-        # Note: A random offset is no longer used for position, see randomdt
-        # in get_new_particles above. However, we do advance a tiny fraction to
-        # prevent particles being immediately scraped.
-        offset = mwxrun.get_dt()*1.e-5*v_coords
-
-        x_coords = np.zeros_like(v_coords)
-        x_coords[:, 0] = positions[:, 0] + offset[:, 0]
-        # x_coords[:, 1] = 0.
-        x_coords[:, 2] = positions[:, 1] + offset[:, 2]
+        x = np.asarray(positions[:, 0], order="C")
+        y = np.asarray(0., order="C")
+        z = np.asarray(positions[:, 1], order="C")
 
         if rseed is not None:
             np.random.set_state(nprstate)
 
-        return {'x_coords': x_coords, 'v_coords': v_coords}
+        return x, y, z, vx, vy, vz
 
     @staticmethod
     # Synthetic tests showed 18 ms to 660us change from using np.dot +
