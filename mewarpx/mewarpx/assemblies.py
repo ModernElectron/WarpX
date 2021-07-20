@@ -96,7 +96,6 @@ class Cylinder(Assembly):
         # Y is always treated as the height
         self.center_x = center_x
         self.center_z = center_z
-        self.height = 1 # m
         self.radius = radius
         self.implicit_function = (
             f"-((x-{self.center_x})**2+(z-{self.center_z})**2-{self.radius}**2)"

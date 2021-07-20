@@ -773,7 +773,7 @@ class ZPlaneEmitter(Emitter):
         """Initialize an emitter for a planar cathode.
 
         Arguments:
-            conductor (warp.Assembly): Conductor object, used to obtain work
+            conductor (mewarpx.assemblies object): Conductor object, used to obtain work
                 function. Can later grab other variables from this conductor.
             T (float): Temperature in Kelvin for the emitter; determines
                 velocities.
@@ -929,7 +929,6 @@ class ArbitraryEmitter2D(Emitter):
         Y = Y.flatten()
         Z = Z.flatten()
 
-        np.set_printoptions(threshold=np.inf)
         inside = np.reshape(
             self.conductor.isinside(X, Y, Z, aura=self.dA/5.),
             oshape)
@@ -995,7 +994,7 @@ class ArbitraryEmitter2D(Emitter):
                                                         emission_type=self.emission_type))
 
         # Rotate velocities based on angle of normal
-        newvels = self.convert_vel_zhat_nhat(vels, self.normal)
+        newvels = self.convert_vel_zhat_nhat(vels, self.normal[self.contour_idx])
         vx = np.asarray(newvels[:, 0], order="C")
         vy = np.asarray(newvels[:, 1], order="C")
         vz = np.asarray(newvels[:, 2], order="C")
