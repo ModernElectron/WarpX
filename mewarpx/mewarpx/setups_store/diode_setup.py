@@ -403,20 +403,19 @@ class DiodeRun_V1(object):
     def init_conductors(self):
         print('### Init Diode Conductors Setup ###')
         # # Create source conductors a.k.a the cathode
-        self.cathode = assemblies.ZPlane(z=0., zsign=-1., V=self.V_CATHODE,
-                                    WF=self.CATHODE_PHI,
-                                    T=self.CATHODE_TEMP,
-                                   name='cathode')
+        self.cathode = assemblies.ZPlane(
+            z=0., zsign=-1., V=self.V_CATHODE, WF=self.CATHODE_PHI,
+            T=self.CATHODE_TEMP, name='cathode'
+        )
 
         # # Create ground plate a.k.a the anode
         # # Subtract small z value for the anode plate not to land exactly on the
         # # grid
-        self.anode_plane = assemblies.ZPlane(V=self.V_ANODE,
-                                       z=self.D_CA - self.ANODE_OFFSET,
-                                       zsign=1,
-                                       WF=self.ANODE_PHI,
-                                       T=self.ANODE_TEMP,
-                                       name='anode_plane')
+        self.anode_plane = assemblies.ZPlane(
+            V=self.V_ANODE, z=self.D_CA - self.ANODE_OFFSET,
+            zsign=1, WF=self.ANODE_PHI, T=self.ANODE_TEMP,
+            name='anode_plane'
+        )
         self.anode_plane.WF = self.ANODE_PHI
         self.anode_plane.temperature = self.ANODE_TEMP
 
