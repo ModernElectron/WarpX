@@ -17,6 +17,8 @@ class Species(picmi.Species):
         """PICMI relies on C++ WarpX to translate charge & mass strings to
         floats. To get around that we have our own variables sq/sm (species
         charge/mass) that are always floats.
+
+        Automatically adds the species to the simulation
         """
         self.grid = kw.pop("warpx_grid", None)
         self.n_macroparticle_per_cell = kw.pop(

@@ -4,11 +4,13 @@ Utility functions for mewarpx.
 import errno
 import inspect
 import os
+import warnings
 
 import numpy as np
 
 from pywarpx import geometry
 from mewarpx import mwxconstants as constants
+from warpx.mewarpx.mewarpx import emission
 
 # http://stackoverflow.com/questions/50499/in-python-how-do-i-get-the-path-and-name-of-the-file-t
 mewarpx_dir = os.path.dirname(os.path.abspath(
@@ -61,8 +63,8 @@ def get_velocities(num_samples, T, m, emission_type='thermionic',
         vz) for each electron.
     """
     if (emission_type != 'thermionic') and not np.isclose(transverse_fac, 1.0):
-        return ValueError('transverse_fac is a support argument only for '
-                          + 'thermionic emissiion models!')
+        return ValueError('transverse_fac is a support argument only for ' \
+                          'thermionic emissiion models!')
 
     if rseed is not None:
         nprstate = np.random.get_state()
@@ -70,12 +72,12 @@ def get_velocities(num_samples, T, m, emission_type='thermionic',
     sigma = np.sqrt(constants.kb_J * T / m)
 
     if transverse_fac < 0.:
-        print("WARNING: transverse_fac is out of bounds")
-        print("Constraining to minimum value of 0.")
+        warnings.warn('WARNING: transverse_fac is out of bounds\n' \
+                        'Constraining to minimum value of 0.')
         beta = 0.
     elif transverse_fac > 2.:
-        print("WARNING: transverse_fac is out of bounds")
-        print("Constraining to maximum value of 2.")
+        warnings.warn('WARNING: transverse_fac is out of bounds\n' \
+                        'Constraining to maximum value of 2.')
         beta = np.sqrt(2.)
     else:
         beta = np.sqrt(transverse_fac)
@@ -97,7 +99,7 @@ def get_velocities(num_samples, T, m, emission_type='thermionic',
     elif emission_type == 'half_maxwellian':
         vz = np.abs(sigma * np.random.randn(num_samples) * beta)
     else:
-        raise ValueError('Unsupported emission type "%s".' % emission_type)
+        raise ValueError(f'Unsupported emission type "{emission_type}".')
 
     if rseed is not None:
         np.random.set_state(nprstate)
@@ -176,9 +178,9 @@ def J_RD(T, WF, A):
     Arguments:
         T (float): temperature of the cathode in K
         WF (float): work function of the cathode in eV
-        A (float): coefficient of emission in Amp/cm^2/K^2
+        A (float): coefficient of emission in Amp/m^2/K^2
 
     Returns:
-        J (float): current density in Amp/cm^2
+        J (float): current density in Amp/m^2
     """
     return A*T**2*np.exp(-1.*WF/(constants.kb_eV*T))

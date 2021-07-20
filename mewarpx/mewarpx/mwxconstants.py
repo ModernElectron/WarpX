@@ -6,9 +6,9 @@ import scipy.constants as scipy_consts
 
 # CONSTANTS - SI
 physical_constants_dict = scipy_consts.codata._physical_constants_2018
-h = physical_constants_dict['Planck constant'][0]
-e = physical_constants_dict['elementary charge'][0]
-m_e = physical_constants_dict['electron mass'][0]
+h = constants.h_bar * 2*np.pi # J s
+e = constants.q_e # C
+m_e = constants.m_e # kg
 kb_J = constants.kb # J/K
 
 # The theoretical value for the Richardson constant, ~120 A/cm^2/K^2
@@ -21,4 +21,4 @@ erg_SI = 1e-7 # 1 erg in J
 kb_cgs = kb_J / erg_SI # erg/K
 torr_cgs = torr_SI * 10 # 1 torr in dyne/cm^2
 
-kb_eV = 8.617333262e-5 # eV/K
+kb_eV = kb_J / e # eV/K
