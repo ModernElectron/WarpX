@@ -62,7 +62,7 @@ def get_velocities(num_samples, T, m, emission_type='thermionic',
         vz) for each electron.
     """
     if (emission_type != 'thermionic') and not np.isclose(transverse_fac, 1.0):
-        return ValueError('transverse_fac is a support argument only for ' \
+        return ValueError('transverse_fac is a support argument only for '
                           'thermionic emissiion models!')
 
     if rseed is not None:
@@ -71,12 +71,12 @@ def get_velocities(num_samples, T, m, emission_type='thermionic',
     sigma = np.sqrt(constants.kb_J * T / m)
 
     if transverse_fac < 0.:
-        warnings.warn('WARNING: transverse_fac is out of bounds\n' \
-                        'Constraining to minimum value of 0.')
+        warnings.warn('WARNING: transverse_fac is out of bounds\n'
+                      'Constraining to minimum value of 0.')
         beta = 0.
     elif transverse_fac > 2.:
-        warnings.warn('WARNING: transverse_fac is out of bounds\n' \
-                        'Constraining to maximum value of 2.')
+        warnings.warn('WARNING: transverse_fac is out of bounds\n'
+                      'Constraining to maximum value of 2.')
         beta = np.sqrt(2.)
     else:
         beta = np.sqrt(transverse_fac)

@@ -2,10 +2,8 @@
 from pywarpx.picmi import constants
 
 import numpy as np
-import scipy.constants as scipy_consts
 
 # CONSTANTS - SI
-physical_constants_dict = scipy_consts.codata._physical_constants_2018
 h = constants.hbar * 2*np.pi # J s
 e = constants.q_e # C
 m_e = constants.m_e # kg

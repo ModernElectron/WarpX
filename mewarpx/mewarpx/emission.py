@@ -210,9 +210,9 @@ class FixedNumberInjector(Injector):
             self.name = "fixed_injector_" + self.species.name
         self.unique_particles = unique_particles
 
-        print(f"Fixed injection of {self.npart_total} particles, " \
-            f"weight {self.weight}, every {self.injectfreq}" \
-            f"timesteps.")
+        print(f"Fixed injection of {self.npart_total} particles, "
+              f"weight {self.weight}, every {self.injectfreq}"
+              f"timesteps.")
         callbacks.installparticleinjection(self.inject_particles)
 
     def inject_particles(self):
@@ -354,8 +354,8 @@ class ThermionicInjector(Injector):
             self.ptcl_per_step = max_injections
             self.weight = self.wfac * electrons_per_step / self.ptcl_per_step
             self.poisson = False
-            print(f"Using deterministic injection of {self.ptcl_per_step}" \
-                f"step, each with weight {self.weight}")
+            print(f"Using deterministic injection of {self.ptcl_per_step}"
+                  f"step, each with weight {self.weight}")
         callbacks.installparticleinjection(self.inject_particles)
 
     def inject_particles(self):
@@ -672,7 +672,7 @@ class Emitter(BaseEmitter):
                 weights.  Defaults to True.
             emission_type (str): Distribution function type used to sample
                 velocities of the emitted particles. Must be defined in
-                mewarpx.util.get_velocities. Defaults to 'thermionic'.
+                :func:`mewarpx.util.get_velocities`. Defaults to 'thermionic'.
         """
         super(Emitter, self).__init__()
         self.T = T
@@ -752,7 +752,7 @@ class ZPlaneEmitter(Emitter):
         """Initialize an emitter for a planar cathode.
 
         Arguments:
-            conductor (warpx.Assembly): Conductor object, used to obtain work
+            conductor (:class:`mewarpx.assemblies.Assembly`): Conductor object, used to obtain work
                 function. Can later grab other variables from this conductor.
             T (float): Temperature in Kelvin for the emitter; determines
                 velocities.
@@ -815,7 +815,7 @@ class ZPlaneEmitter(Emitter):
 
     def _get_xv_coords(self, npart, m, rseed):
         """Get particle coordinates given particle number.
-        See :func:`mewarpx.emission.Emitter.get_newparticles` for details.
+        See :func:`mewarpx.emission.BaseEmitter.get_newparticles` for details.
         """
         if rseed is not None:
             nprstate = np.random.get_state()
