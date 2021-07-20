@@ -488,7 +488,7 @@ class DiodeRun_V1(object):
         #        injectfreq=self.DIAG_STEPS,
         #        weight=weight
         #    )
-            pass
+            raise NotImplementedError
         else:
             if self.dim == 1:
                 npart = self.NPARTPERSTEP
@@ -496,7 +496,7 @@ class DiodeRun_V1(object):
                 npart = self.NPPC
 
             self.injector = emission.ThermionicInjector(
-                self.emitter, self.SPECIES[0], npart, self.CATHODE_TEMP,
+                self.emitter, self.electrons, npart, self.CATHODE_TEMP,
                 self.CATHODE_PHI, self.CATHODE_A
             )
 

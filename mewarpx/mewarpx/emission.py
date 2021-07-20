@@ -613,7 +613,7 @@ class BaseEmitter(object):
 
     def _get_xv_coords(self, npart, m, rseed):
         """Per-subclass implementation of generating new particle data.
-        See :func:`mewarpx.emission.Emitter.get_newparticles` for details on
+        See :func:`mewarpx.emission.BaseEmitter.get_newparticles` for details on
         arguments.
 
         Returns:
