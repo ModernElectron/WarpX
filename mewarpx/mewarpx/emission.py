@@ -299,8 +299,8 @@ class ThermionicInjector(Injector):
                  unique_particles=True):
         """Sets up user-specified injection for warp (top.inject = 6).
         Notes:
-            Must be run after w3d dimensions (warp.w3d.xmmin etc) and cell
-            numbers (warp.w3d.nx etc) are set.
+            Must be run after w3d dimensions (mwxrun.xmin etc) and cell
+            numbers (mwxrun.nx etc) are set.
         Arguments:
             emitter (:class:`mewarpx.emission.Emitter`): Emitter object that
                 will specify positions and velocities of particles to inject.
@@ -889,7 +889,7 @@ class ArbitraryEmitter2D(Emitter):
     def __init__(self, conductor, T, res_fac=5., transverse_fac=1.0, **kwargs):
         """Construct the emitter based on conductor object and temperature.
         Arguments:
-            conductor (warp.Assembly object): Conductor to emit from.
+            conductor (mewarpx.assemblies object): Conductor to emit from.
             T (float): Temperature in Kelvin.
             res_fac (float): Level of resolution beyond the grid resolution to
                 use for calculating shape contours.
