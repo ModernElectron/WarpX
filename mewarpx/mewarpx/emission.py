@@ -46,13 +46,6 @@ class Injector(object):
     #     if 'E_total' not in warp.Species._addedpids:
     #         warp.Species.addpid('E_total')
 
-    def cleanup(self):
-        """Injectors should uninstall their injection function here.
-        Previously used for testing to put Warp into a good state; could also
-        be used if simulation should change partway through.
-        """
-        raise NotImplementedError
-
     @staticmethod
     def compute_npart(npart_total, unique_particles):
         """Compute number of particles to insert at a given timestep.
@@ -219,9 +212,9 @@ class FixedNumberInjector(Injector):
             self.name = "fixed_injector_" + self.species.name
         self.unique_particles = unique_particles
 
-        print(("Fixed injection of {} particles, weight {}, every "
-            "{} timesteps.").format(
-                self.npart_total, self.weight, self.injectfreq))
+        print(f"Fixed injection of {self.npart_total} particles, " \
+            f"weight {self.weight}, every {self.injectfreq}" \
+            f"timesteps.")
         callbacks.installparticleinjection(self.inject_particles)
 
     def inject_particles(self):
@@ -244,7 +237,7 @@ class FixedNumberInjector(Injector):
                 randomdt=False, velhalfstep=False
             )
 
-            print("Inject {} particles".format(len(particles_dict['x'])))
+            print(f"Inject {len(particles_dict['x'])} particles")
             # We can basically call _libwarpx.libwarpx.warpx_addNParticles()
             # directly as we shouldn't need the wrapper, unless number to
             # inject is 0, but for now we'll be conservative and use the
@@ -273,13 +266,6 @@ class FixedNumberInjector(Injector):
                     particles_dict['E_total'],
                     particles_dict.get('w', None)
                 )
-
-    def cleanup(self):
-        """Uninstall particle injection function
-        Previously used for testing to put Warp into a good state; could also
-        used if simulation should change partway through.
-        """
-        callbacks.uninstallparticleinjection(self.inject_particles)
 
 
 class ThermionicInjector(Injector):
@@ -350,8 +336,8 @@ class ThermionicInjector(Injector):
                               * area * dt / picmi.constants.q_e)
         print("Area", area, "dt", dt, "J",
               mwxutil.J_RD(self.T, self.WF, self.A))
-        print(("Emission current corresponds to injection of {:.2e} "
-               "electrons per timestep").format(electrons_per_step))
+        print(f"Emission current corresponds to injection of {electrons_per_step}" \
+            f"electrons per step")
         max_injections = int(round(npart_per_cellstep *
                                    self.emitter.cell_count))
 
@@ -367,9 +353,8 @@ class ThermionicInjector(Injector):
             self.ptcl_per_step = max_injections
             self.weight = self.wfac * electrons_per_step / self.ptcl_per_step
             self.poisson = False
-            print(("Using deterministic injection of {:d} macroparticles per "
-                   "step, each with weight {:.2e}").format(
-                       self.ptcl_per_step, self.weight))
+            print(f"Using deterministic injection of {self.ptcl_per_step}" \
+                f"step, each with weight {self.weight}")
         callbacks.installparticleinjection(self.inject_particles)
         #callbacks.installafterstep(self.inject_particles)
 
@@ -422,12 +407,6 @@ class ThermionicInjector(Injector):
                 particles_dict.get('w', None)
             )
 
-    def cleanup(self):
-        """Uninstall particle injection function
-        Previously used for testing to put Warp into a good state; could also
-        be used if simulation should change partway through.
-        """
-        callbacks.uninstallparticleinjection(self.inject_particles)
 
 class BaseEmitter(object):
 
@@ -608,20 +587,6 @@ class BaseEmitter(object):
                 q=q, m=m
             )
 
-        # TODO: Figure out wrapping after the randomdt/velhalfstep. We should
-        # check periodic BCs manually and handle dimensions though, so it's a
-        # fair bit of work.
-        # # Manually warp around periodic BCs; otherwise warp will autoscrape
-        # # particles outside
-        # x_coords = np.stack(
-        #     (particle_dict['x'], particle_dict['y'], particle_dict['z']),
-        #     axis=-1
-        # )
-        # x_coords = util.wrap_positions(x_coords)
-        # particle_dict['x'] = x_coords[:, 0]
-        # particle_dict['y'] = x_coords[:, 1]
-        # particle_dict['z'] = x_coords[:, 2]
-
         if rseed is not None:
             np.random.set_state(nprstate)
 
@@ -758,7 +723,7 @@ class ZPlaneEmitter(Emitter):
     """This is the standard injection for a planar cathode."""
     geoms = ['Z', 'XZ', 'XYZ']
 
-    def __init__(self, conductor, T, xmin=None, xmax=None,
+    def __init__(self, conductor, T=None, xmin=None, xmax=None,
                  ymin=None, ymax=None, transverse_fac=1.0, **kwargs):
         """Initialize an emitter for a planar cathode.
 
@@ -787,10 +752,11 @@ class ZPlaneEmitter(Emitter):
                 "emission_type").
         """
         # Default initialization
+        if not T:
+            T = conductor.T
         super(ZPlaneEmitter, self).__init__(T=T, conductor=conductor, **kwargs)
 
         self.z = conductor.z
-
         self.zsign = conductor.zsign
         self.transverse_fac = transverse_fac
 
