@@ -2,9 +2,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import numpy as np
 import copy
-
-from mewarpx import util
-
+import collections
 
 class ArrayPlot(object):
 
@@ -200,7 +198,7 @@ class ArrayPlot(object):
         self.template = template
         self.params = copy.copy(self.param_defaults)
         if style is not None:
-            self.params = util.recursive_update(
+            self.params = recursive_update(
                 self.params, self.styles[style])
 
         self.siminfo = siminfo
@@ -216,6 +214,9 @@ class ArrayPlot(object):
             self.valmin = np.min(self.array)
         if self.valmax is None:
             self.valmax = np.max(self.array)
+
+        if self.valmin >= self.valmax:
+            self.valmax = self.valmin + 1e-10
 
         if self.params['linthresh'] is None:
             self.params['linthresh'] = 10**(int(np.log10(max(
@@ -259,7 +260,7 @@ class ArrayPlot(object):
         self.dim = len(self.array.shape)
         print('DIM ', self.dim)
         xaxis_idx, yaxis_idx, sliceaxis_idx, self.sliceaxis_str = (
-            util.get_axis_idxs(self.params["xaxis"], self.params["yaxis"],
+            get_axis_idxs(self.params["xaxis"], self.params["yaxis"],
                                self.dim))
         self.xaxisvec = self.siminfo.get_vec(self.params["xaxis"])
         if self.dim == 1:
@@ -269,7 +270,7 @@ class ArrayPlot(object):
             self.yaxisvec = self.siminfo.get_vec(self.params["yaxis"])
         self.slicevec = (self.siminfo.get_vec(sliceaxis_idx)
                          if self.dim == 3 else None)
-        self.array = util.get_2D_field_slice(
+        self.array = get_2D_field_slice(
             self.array, xaxis_idx, yaxis_idx, self.slicevec,
             self.params["slicepos"])
 
@@ -331,7 +332,7 @@ class ArrayPlot(object):
                 self.params["numpoints"])
         idx_list = []
         barrier_indices = []
-        for point in util.return_iterable(self.params["points"]):
+        for point in return_iterable(self.params["points"]):
             idx_list.append(np.argmin(np.abs(self.yaxisvec - point)))
         for idx in idx_list:
             spos = self.yaxisvec[idx]
@@ -360,6 +361,7 @@ class ArrayPlot(object):
         # and choose contours in both regions.
         norm = self.norm
         contour_points = self._gen_plot_contours()
+        print("contour points", contour_points)
         print("CONTOUR POINTS SHAPE ", contour_points.shape)
         print("xaxisvec", len(self.xaxisvec))
         print("yaxisvec", len(self.yaxisvec))
@@ -456,3 +458,171 @@ class ArrayPlot(object):
         contour_points = sorted(set(
             np.concatenate([neglogcontours, lincontours, poslogcontours])))
         return contour_points
+
+
+class SimInfo(object):
+
+    """Store basic simulation parameters used throughout analysis.
+    This must contain:
+        SimInfo.nxyz (int nx, int ny, int nz)
+        SimInfo.pos_lims (floats xmin, xmax, ymin, ymax, zmin, zmax)
+        SimInfo.geom (str 'XZ', 'RZ' or 'XYZ')
+        SimInfo.dt (float)
+        SimInfo.periodic (bool)
+    Note:
+        This base class has been created to provide additional plotting
+        functionality, and allow post-run creation of this object if needed.
+    """
+
+    def __init__(self, nxyz, pos_lims, geom, dt, periodic=True):
+        self.nxyz = nxyz
+        self.pos_lims = pos_lims
+        self.geom = geom
+        self.dt = dt
+        self.periodic = periodic
+
+    def get_vec(self, axis):
+        if axis == 'r':
+            raise ValueError("RZ plotting is not implemented yet.")
+            return self.get_rvec()
+        axis_dict = {0: 0, 1: 1, 2: 2, 'x': 0, 'y': 1, 'z': 2}
+        axis = axis_dict[axis]
+        npts = self.nxyz[axis]
+        xmin = self.pos_lims[2*axis]
+        xmax = self.pos_lims[2*axis + 1]
+        # There is one more point on the grid than cell number
+        return np.linspace(xmin, xmax, npts + 3)
+
+def recursive_update(d, u):
+    """Recursively update dictionary d with keys from u.
+    If u[key] is not a dictionary, this works the same as dict.update(). If
+    u[key] is a dictionary, then update the keys of that dictionary within
+    d[key], rather than replacing the whole dictionary.
+    """
+    # https://stackoverflow.com/questions/3232943/update-value-of-a-nested-dictionary-of-varying-depth
+    for k, v in u.items():
+        if isinstance(v, collections.Mapping):
+            d[k] = recursive_update(d.get(k, {}), v)
+        else:
+            d[k] = v
+    return d
+
+axis_labels_2d = ['r', 'x', 'z']
+axis_labels_3d = ['x', 'y', 'z']
+axis_dict_3d = {'x': 0, 'y': 1, 'z': 2}
+axis_dict_2d = {'r': 0, 'x': 0, 'z': 1}
+
+
+def return_iterable(x, depth=1):
+    """Return x if x is iterable, None if x is None, [x] otherwise.
+    Useful for arguments taking either a list of single value. Strings are a
+    special case counted as 'not iterable'.
+    Arguments:
+        depth (int): This many levels must be iterable. So if you need an
+            iterable of an iterable, this is 2.
+    """
+    if x is None:
+        return None
+    elif depth > 1:
+        # First make sure it's iterable to one less than the required depth.
+        x = return_iterable(x, depth=depth-1)
+        # Now check that it's iterable to the required depth. If not, we just
+        # need to nest it in one more list.
+        x_flattened = x
+        while depth > 1:
+            if all([(isinstance(y, collections.abc.Iterable) and not isinstance(y, str))
+                    for y in x_flattened]):
+                x_flattened = [z for y in x_flattened for z in y]
+                depth -= 1
+            else:
+                return [x]
+        return x
+
+    elif isinstance(x, str):
+        return [x]
+    elif isinstance(x, collections.abc.Iterable):
+        return x
+    else:
+        return [x]
+
+
+def get_axis_idxs(axis1, axis2, dim=2):
+    """Return the indices appropriate for the given axes and dimension.
+    Arguments:
+        axis1 (string): 'r', 'x', 'y' or 'z'
+        axis2 (string): 'r', 'x', 'y' or 'z'
+        dim (int): 2 or 3 (2D/3D)
+    Returns:
+        idx_list (list): [axis1_idx, axis2_idx, slice_idx, slice_str]. Here
+        slice_idx is the third dimension for 3D and slice_str is its label. Both
+        are None for 2D.
+    """
+    axes = [axis1, axis2]
+    if dim not in [1, 2, 3]:
+        raise ValueError("Unrecognized dimension dim = {}".format(dim))
+    if dim == 1:
+        return[axis_dict_2d['z'], axis_dict_2d['x'], None, None]
+    for ii, axis in enumerate(axes):
+        if dim == 2 and axis not in axis_labels_2d:
+            raise ValueError("Unrecognized axis {} for 2D".format(axis))
+        if dim == 3 and axis not in axis_labels_3d:
+            if axis == 'r':
+                axes[ii] = 'x'
+            else:
+                raise ValueError("Unrecognized axis {} for 3D".format(axis))
+    if axes[0] == axes[1] or (axes[0] in ['r', 'x']
+                              and axes[1] in ['r', 'x']):
+        raise ValueError("axis1 and axis2 must be different")
+    if dim == 2:
+        return [axis_dict_2d[axes[0]], axis_dict_2d[axes[1]], None, None]
+    xaxis = axis_dict_3d[axes[0]]
+    yaxis = axis_dict_3d[axes[1]]
+    sliceaxis = (set((0, 1, 2)) - set((xaxis, yaxis))).pop()
+    s_str = (set(('x', 'y', 'z')) - set((axes[0], axes[1]))).pop()
+    return [xaxis, yaxis, sliceaxis, s_str]
+
+def get_2D_field_slice(data, xaxis, yaxis, slicevec=None, slicepos=None):
+    """Return appropriate 2D field slice given the geometry.
+    Arguments:
+        data (np.ndarray): 2D or 3D array, depending on geometry
+        xaxis (int): Index of abscissa dimension of data
+        yaxis (int): Index of ordinate dimension of data
+        sliceaxis (int): Index of dimension of data to slice from. None for 2D.
+        slicevec (np.ndarray): 1D vector of positions along slice. None for 2D,
+            or to take middle element in 3D.
+        slicepos (float): Position to slice along sliceaxis (m). Default 0 if
+            slicevec != None; ignored if slicevec == None.
+    Returns:
+        slice (np.ndarray): 2D array. Ordinate is the first dimension of the
+        array, abscissa the 2nd.
+    """
+    data = np.array(data)
+    dim = len(data.shape)
+    if dim == 1:
+        data = np.tile(data, (2, 1))
+        # Flip x and y?
+        if xaxis < yaxis:
+            return data.T
+        return data
+    if dim == 2:
+        # if slicevec is not None or slicepos is not None:
+        #      logger.warning("slicevec and slicepos ignored for 2D data in "
+        #                     "get_2D_field_slice()")
+        # Flip x and y?
+        if xaxis < yaxis:
+            return data.T
+        return data
+    sliceaxis = (set((0, 1, 2)) - set((xaxis, yaxis))).pop()
+    if slicevec is None:
+        # if slicepos is not None:
+        #     logger.warning("slicepos ignored when slicevec == None in "
+        #                    "get_2D_field_slice()")
+        idx = data.shape[sliceaxis] // 2
+    else:
+        if slicepos is None:
+            slicepos = 0.0
+        idx = np.argmin(np.abs(slicevec - slicepos))
+    dslice = data.take(idx, axis=sliceaxis)
+    if xaxis < yaxis:
+        return dslice.T
+    return dslice

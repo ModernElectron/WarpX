@@ -3,9 +3,7 @@ Monte-Carlo Collision script based on case 1 from
 Turner et al. (2013) - https://doi.org/10.1063/1.4775084
 """
 
-from matplotlib.pyplot import plot
 from mewarpx import util as mwxutil
-from mewarpx.SimInfo import SimInfo
 mwxutil.init_libwarpx(ndim=2, rz=False)
 
 from mewarpx.mwxrun import mwxrun
@@ -14,8 +12,9 @@ from mewarpx.mcc_wrapper import MCC
 from mewarpx.diags_store import diag_base
 
 from pywarpx import picmi
-import pywarpx
 from mewarpx import plotting
+
+from pywarpx import _libwarpx
 
 import numpy as np
 
@@ -195,7 +194,7 @@ mwxrun.simulation.step()
 ##########################
 
 # plot stuff
-sim_info = SimInfo(
+sim_info = plotting.SimInfo(
     nxyz=(nx, 0, nz),
     pos_lims=(xmin, xmax, None, None, zmin, zmax),
     geom='XZ',
@@ -203,12 +202,12 @@ sim_info = SimInfo(
     periodic=True
 )
 
-data = np.array(mwxrun.get_gathered_phi_grid()[0])
+data = np.array(mwxrun.get_gathered_rho_grid()[0])
 print('SHAPE', np.shape(data))
 print('TYPE ', type(data))
 
 
-plotter = plotting.ArrayPlot(siminfo=sim_info, array=data, template='phi', xaxis='x', yaxis='z')
+#plotter = plotting.ArrayPlot(siminfo=sim_info, array=data, template='phi', xaxis='x', yaxis='z')
 
 
 # if mwxrun.me == 0:
