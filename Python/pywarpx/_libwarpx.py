@@ -1110,8 +1110,6 @@ def get_mesh_current_density_fp_pml(level, direction, include_ghosts=True):
         return _get_mesh_field_list(libwarpx.warpx_getCurrentDensityFP_PML, level, direction, include_ghosts)
     except ValueError:
         raise Exception('PML not initialized')
-
-
 def get_mesh_charge_density_cp(level, include_ghosts=True):
     '''
 

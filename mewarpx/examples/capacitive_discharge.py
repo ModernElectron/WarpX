@@ -13,7 +13,6 @@ from mewarpx.diags_store import diag_base
 
 from pywarpx import picmi
 import pywarpx
-from pywarpx import callbacks
 
 import numpy as np
 

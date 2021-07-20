@@ -6,7 +6,6 @@ import inspect
 import os
 
 import numpy as np
-import minerva.util as minutil
 
 from pywarpx import geometry
 from mewarpx import mwxconstants as constants
@@ -111,7 +110,7 @@ def get_velocities(num_samples, T, m, emission_type='thermionic',
     if rseed is not None:
         nprstate = np.random.get_state()
         np.random.seed(rseed)
-    sigma = np.sqrt(minutil.kb_J * T / m)
+    sigma = np.sqrt(constants.kb_J * T / m)
 
     if transverse_fac < 0.:
         print("WARNING: transverse_fac is out of bounds")

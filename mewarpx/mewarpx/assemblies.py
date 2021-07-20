@@ -76,7 +76,7 @@ class Cylinder(Assembly):
     """An infinitely long Cylinder pointing in the y-direction."""
 
     def __init__(self, center_x, center_z, radius, V, T, WF, name,
-                 install_in_fieldsolver=True):
+                 install_in_simulation=True):
         """Basic initialization.
 
         Arguments:
@@ -89,11 +89,10 @@ class Cylinder(Assembly):
             T (float): Temperature (K)
             WF (float): Work function (eV)
             name (str): Assembly name
-            install_in_fieldsolver (bool): If True and the Assembly is an
+            install_in_simulation (bool): If True and the Assembly is an
                 embedded boundary it will be included in the WarpX fieldsolver
         """
         super(Cylinder, self).__init__(V=V, T=T, WF=WF, name=name)
-        # Y is always treated as the height
         self.center_x = center_x
         self.center_z = center_z
         self.radius = radius
@@ -101,9 +100,8 @@ class Cylinder(Assembly):
             f"-((x-{self.center_x})**2+(z-{self.center_z})**2-{self.radius}**2)"
         )
 
-        if install_in_fieldsolver:
-            self._install_in_fieldsolver()
-
+        if install_in_simulation:
+            self._install_in_simulation()
 
     def isinside(self, X, Y, Z, aura):
         """
@@ -121,8 +119,9 @@ class Cylinder(Assembly):
             result (np.ndarray): array of flattened grid where all tiles
                 inside the cylinder are 1, and other tiles are 0.
         """
-        result = np.where((X - self.center_x)**2 + (Z - self.center_z)**2 <= (self.radius + aura)**2,
-                             1, 0)
+        dist_to_center = (X - self.center_x)**2 + (Z - self.center_z)**2
+        boundary = (self.radius + aura)**2
+        result = np.where(dist_to_center <= boundary, 1, 0)
 
         return result
 
@@ -145,7 +144,7 @@ class Cylinder(Assembly):
         nhat[2, :] = (pz - self.center_z) / dist
         return nhat
 
-    def _install_in_fieldsolver(self):
+    def _install_in_simulation(self):
         """Function to pass this EB object to the WarpX simulation."""
 
         if mwxrun.simulation.embedded_boundary is not None:
