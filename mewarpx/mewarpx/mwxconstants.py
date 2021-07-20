@@ -6,7 +6,7 @@ import scipy.constants as scipy_consts
 
 # CONSTANTS - SI
 physical_constants_dict = scipy_consts.codata._physical_constants_2018
-h = constants.h_bar * 2*np.pi # J s
+h = constants.hbar * 2*np.pi # J s
 e = constants.q_e # C
 m_e = constants.m_e # kg
 kb_J = constants.kb # J/K

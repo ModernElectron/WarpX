@@ -10,7 +10,6 @@ import numpy as np
 
 from pywarpx import geometry
 from mewarpx import mwxconstants as constants
-from warpx.mewarpx.mewarpx import emission
 
 # http://stackoverflow.com/questions/50499/in-python-how-do-i-get-the-path-and-name-of-the-file-t
 mewarpx_dir = os.path.dirname(os.path.abspath(
