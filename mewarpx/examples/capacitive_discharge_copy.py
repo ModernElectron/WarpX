@@ -63,7 +63,7 @@ TOTAL_TIME = 10.0 * DT # 1280 / FREQ
 # --- Number of time steps
 max_steps = int(TOTAL_TIME / DT)
 diag_steps = 2
-diagnostic_intervals = "400::10"
+diagnostic_intervals = "::1"
 
 print('Setting up simulation with')
 print('  dt = %.3e s' % DT)
@@ -120,7 +120,7 @@ grid = picmi.Cartesian2DGrid(
     upper_boundary_conditions=['periodic', 'dirichlet'],
     lower_boundary_conditions_particles=['periodic', 'absorbing'],
     upper_boundary_conditions_particles=['periodic', 'absorbing'],
-    warpx_potential_hi_z = anode_voltage, #"%.1f*sin(2*pi*%.5e*t)" % (VOLTAGE, FREQ),
+    warpx_potential_hi_z = "%.1f*sin(2*pi*%.5e*t)" % (VOLTAGE, FREQ),
     moving_window_velocity = None,
     warpx_max_grid_size = nz//4
 )
@@ -129,10 +129,10 @@ grid = picmi.Cartesian2DGrid(
 # declare solver
 ##########################
 
-# solver = picmi.ElectrostaticSolver(
-#    grid=grid, method='Multigrid', required_precision=1e-12
-# )
-solver = PoissonSolverPseudo1D(grid=grid)
+solver = picmi.ElectrostaticSolver(
+   grid=grid, method='Multigrid', required_precision=1
+)
+#solver = PoissonSolverPseudo1D(grid=grid)
 
 ##########################
 # diagnostics
@@ -201,14 +201,13 @@ sim_info = plotting.SimInfo(
     dt=DT,
     periodic=True
 )
-
-data = np.array(mwxrun.get_gathered_rho_grid()[0])
+#rho[:, :, 0]
+data = np.array(mwxrun.get_gathered_phi_grid(include_ghosts=False)[0])
 print('SHAPE', np.shape(data))
 print('TYPE ', type(data))
 
 
-#plotter = plotting.ArrayPlot(siminfo=sim_info, array=data, template='phi', xaxis='x', yaxis='z')
-
+plotter = plotting.ArrayPlot(siminfo=sim_info, array=data, template='phi', xaxis='z', yaxis='x')
 
 # if mwxrun.me == 0:
 #     import glob

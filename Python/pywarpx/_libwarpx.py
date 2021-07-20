@@ -1181,7 +1181,7 @@ def get_gathered_charge_density_fp(level):
 
     '''
 
-    return _get_mesh_field_list(libwarpx.warpx_getGatheredChargeDensityFP, level, None, True)
+    return _get_mesh_field_list(libwarpx.warpx_getGatheredChargeDensityFP, level, None, False)
 
 
 def get_mesh_phi_fp(level, include_ghosts=True):
@@ -1210,7 +1210,7 @@ def get_mesh_phi_fp(level, include_ghosts=True):
     return _get_mesh_field_list(libwarpx.warpx_getPhiFP, level, None, include_ghosts)
 
 
-def get_gathered_phi_fp(level):
+def get_gathered_phi_fp(level, include_ghosts=True):
     '''
 
     This returns a single numpy array containing the mesh electrostatic
@@ -1229,7 +1229,7 @@ def get_gathered_phi_fp(level):
 
     '''
 
-    return _get_mesh_field_list(libwarpx.warpx_getGatheredPhiFP, level, None, True)
+    return _get_mesh_field_list(libwarpx.warpx_getGatheredPhiFP, level, None, include_ghosts)
 
 def set_phi_grid_fp(level):
     """This writes new phi data to warpx"""

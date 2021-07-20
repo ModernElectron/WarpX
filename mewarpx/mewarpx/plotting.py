@@ -362,7 +362,7 @@ class ArrayPlot(object):
         norm = self.norm
         contour_points = self._gen_plot_contours()
         print("contour points", contour_points)
-        print("CONTOUR POINTS SHAPE ", contour_points.shape)
+        #print("CONTOUR POINTS SHAPE ", contour_points.shape)
         print("xaxisvec", len(self.xaxisvec))
         print("yaxisvec", len(self.yaxisvec))
         [X, Y] = np.meshgrid(self.xaxisvec, self.yaxisvec)
@@ -412,6 +412,9 @@ class ArrayPlot(object):
             self.ax.streamplot(X*1e6, Y*1e6, grad[1], grad[0], density=2.0,
                                linewidth=1, color="blue", arrowstyle='->',
                                arrowsize=1.5)
+
+        plt.show()
+        plt.savefig("fig.png")
 
     def _gen_plot_contours(self):
         """Generate the list of contours."""
@@ -491,7 +494,7 @@ class SimInfo(object):
         xmin = self.pos_lims[2*axis]
         xmax = self.pos_lims[2*axis + 1]
         # There is one more point on the grid than cell number
-        return np.linspace(xmin, xmax, npts + 3)
+        return np.linspace(xmin, xmax, npts + 1)
 
 def recursive_update(d, u):
     """Recursively update dictionary d with keys from u.

@@ -212,7 +212,7 @@ class MEWarpXRun(object):
         """
         return _libwarpx.get_mesh_phi_fp(self.lev)
 
-    def get_gathered_phi_grid(self):
+    def get_gathered_phi_grid(self, include_ghosts=True):
         """Get the full phi on the grid on the root processor.
 
         Returns:
@@ -220,7 +220,7 @@ class MEWarpXRun(object):
             domain. In place of the numpy array, a reference to an unpopulated
             multifab object is returned on processors other than root.
         """
-        return _libwarpx.get_gathered_phi_fp(self.lev)
+        return _libwarpx.get_gathered_phi_fp(self.lev, include_ghosts)
 
     def set_phi_grid(self, phi_data):
         """Sets phi segments on the grid to input phi data"""
