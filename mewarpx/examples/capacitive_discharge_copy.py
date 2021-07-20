@@ -11,12 +11,13 @@ from mewarpx.poisson_pseudo_1d import PoissonSolverPseudo1D
 from mewarpx.mcc_wrapper import MCC
 from mewarpx.diags_store import diag_base
 
-from pywarpx import picmi
+from pywarpx import callbacks, picmi
 from mewarpx import plotting
 
 from pywarpx import _libwarpx
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 constants = picmi.constants
 
@@ -202,12 +203,17 @@ sim_info = plotting.SimInfo(
     periodic=True
 )
 #rho[:, :, 0]
-data = np.array(mwxrun.get_gathered_phi_grid(include_ghosts=False)[0])
+data = np.array(mwxrun.get_gathered_rho_grid()[0])
 print('SHAPE', np.shape(data))
 print('TYPE ', type(data))
 
-
-plotter = plotting.ArrayPlot(siminfo=sim_info, array=data, template='phi', xaxis='z', yaxis='x')
+fig, ax = plt.subplots(1, 1, figsize=(14, 14))
+plotter = plotting.ArrayPlot(
+    siminfo=sim_info, array=data[:, :, 0],
+    template='rho', xaxis='z', yaxis='x', ax=ax,
+    draw_image=True, draw_contourlines=False,
+    cmap='viridis',
+)
 
 # if mwxrun.me == 0:
 #     import glob
