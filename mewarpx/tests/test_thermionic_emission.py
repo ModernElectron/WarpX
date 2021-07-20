@@ -1,6 +1,6 @@
 """ Test pseudo 1D diode run with thermionic emission"""
+import os
 import numpy as np
-import pandas as pd
 
 from mewarpx import util as mwxutil
 
@@ -42,6 +42,8 @@ def test_thermionic_emission():
     NX = 8
     NZ = 128
 
+    DIRECT_SOLVER = True
+
     max_steps = int(TOTAL_TIME / DT)
     diag_steps = int(DIAG_INTERVAL / DT)
 
@@ -59,6 +61,7 @@ def test_thermionic_emission():
         NPPC=50,
         NX=NX,
         NZ=NZ,
+        DIRECT_SOLVER=DIRECT_SOLVER,
         PERIOD=D_CA * NX / NZ,
         DT=DT,
         TOTAL_TIMESTEPS=max_steps,
@@ -75,6 +78,12 @@ def test_thermionic_emission():
 
     mwxrun.simulation.step(max_steps)
 
-    net_rho_grid = mwxrun.get_gathered_rho_grid()
-    output_rho = np.array(net_rho_grid[0][:, :, 0])
-    np.save(output_rho, )
+    net_rho_grid = np.array(mwxrun.get_gathered_rho_grid()[0][:, :, 0])
+    ref_path = os.path.join(mwxutil.mewarpx_dir, "..",
+                            "tests",
+                            "test_files",
+                            "thermionic_emission",
+                            "thermionic_emission.npy")
+    ref_rho_grid = np.load(ref_path)
+
+    assert np.allclose(net_rho_grid, ref_rho_grid)

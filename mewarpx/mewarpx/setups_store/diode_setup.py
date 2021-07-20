@@ -86,7 +86,7 @@ class DiodeRun_V1(object):
     # # Whether to use Schottky injection
     USE_SCHOTTKY = True
     # # Noninteracting run - only inject trace particles and do field solve once
-    # NONINTERAC = False
+    NONINTERAC = False
     # # Number of particles injected each noninteracting wave
     # NONINTERAC_WAVENUM = 50000
 
@@ -224,8 +224,6 @@ class DiodeRun_V1(object):
             self.init_scraper()
         if init_conductors:
             self.init_conductors()
-        if init_injectors:
-            self.init_injectors()
         if init_inert_gas_ionization:
             self.init_inert_gas_ionization()
         if init_reflection:
@@ -246,6 +244,8 @@ class DiodeRun_V1(object):
             self.init_field_diag()
         if init_warpx:
             self.init_warpx()
+        if init_injectors:
+            self.init_injectors()
 
     def init_base(self):
         print('### Init Diode Base Setup ###')
@@ -462,7 +462,7 @@ class DiodeRun_V1(object):
             )
         elif self.dim < 3:
             self.emitter = emission.ZPlaneEmitter(
-                conductor=self.cathode, z=self.cathode.z,
+                conductor=self.cathode,
                 T=self.CATHODE_TEMP,
                 ymin=0.0, ymax=0.0,
                 transverse_fac=self.TRANSVERSE_FAC,
@@ -470,24 +470,25 @@ class DiodeRun_V1(object):
             )
         else:
             self.emitter = emission.ZPlaneEmitter(
-                conductor=self.cathode, z=self.cathode.zcent,
+                conductor=self.cathode,
                 T=self.CATHODE_TEMP,
                 transverse_fac=self.TRANSVERSE_FAC,
                 use_Schottky=self.USE_SCHOTTKY,
             )
 
         if self.NONINTERAC:
-            runtools.set_noninteracting(solvefreq=self.DIAG_STEPS)
-            weight = (gentools.J_RD(
-                self.CATHODE_TEMP, self.CATHODE_PHI, self.CATHODE_A)
-                    * self.emitter.area
-                    * warp.top.dt * self.DIAG_STEPS
-                    / e / self.NONINTERAC_WAVENUM)
-            self.injector = emission.FixedNumberInjector(
-                self.emitter, 'beam', npart=self.NONINTERAC_WAVENUM,
-                injectfreq=self.DIAG_STEPS,
-                weight=weight
-            )
+        #    runtools.set_noninteracting(solvefreq=self.DIAG_STEPS)
+        #    weight = (gentools.J_RD(
+        #        self.CATHODE_TEMP, self.CATHODE_PHI, self.CATHODE_A)
+        #            * self.emitter.area
+        #            * warp.top.dt * self.DIAG_STEPS
+        #            / e / self.NONINTERAC_WAVENUM)
+        #    self.injector = emission.FixedNumberInjector(
+        #        self.emitter, 'beam', npart=self.NONINTERAC_WAVENUM,
+        #        injectfreq=self.DIAG_STEPS,
+        #        weight=weight
+        #    )
+            pass
         else:
             if self.dim == 1:
                 npart = self.NPARTPERSTEP
@@ -495,7 +496,7 @@ class DiodeRun_V1(object):
                 npart = self.NPPC
 
             self.injector = emission.ThermionicInjector(
-                self.emitter, 'beam', npart, self.CATHODE_TEMP,
+                self.emitter, self.SPECIES[0], npart, self.CATHODE_TEMP,
                 self.CATHODE_PHI, self.CATHODE_A
             )
 
