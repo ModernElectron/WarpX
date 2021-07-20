@@ -122,11 +122,9 @@ class Injector(object):
             Since a parallelsum is performed, call this with only the species
             argument if no particles are being added by this processor.
         Arguments:
-            species (warp.Species): The species object. Assumes jslist has
-                length 1.
+            species: [TODO - adapt to WarpX]
             E_total (np.ndarray): Array of length npart with E_total values.
-            w (np.ndarray): If using variable weights, array of length npart
-                with variable weights.
+            w (np.ndarray): Array of length ``npart`` with variable weights.
             n (int): Number of macroparticles, _only_ needed if overriding the
                 length of E_total. This is useful mostly in the case that
                 E_total is already summed over particles, in which case a
@@ -181,9 +179,9 @@ class FixedNumberInjector(Injector):
     """Inject n particles every t timesteps."""
 
     def __init__(self, emitter, species, npart,
-                injectfreq=None, injectoffset=1,
-                weight=0., rseed=None,
-                name=None, unique_particles=True):
+                 injectfreq=None, injectoffset=1,
+                 weight=0., rseed=None,
+                 name=None, unique_particles=True):
         """Sets up user-specified injection with fixed timestep and weights.
         Arguments:
             emitter (:class:`mewarpx.emission.Emitter`): Emitter object that
@@ -198,7 +196,7 @@ class FixedNumberInjector(Injector):
             rseed (int): If specified, all injection should be repeatable using
                 this rseed. At present each set of injected particles will have
                 the same initial position and velocities as the previous set.
-            name (str or None): Injector name for diagnostics. Constructed from
+            name (str): Injector name for diagnostics. Constructed from
                 speciesname if not given.
             unique_particles (bool): Whether WarpX will keep all particles
                 given it from every processor (True) or keep only a fraction of
@@ -244,7 +242,7 @@ class FixedNumberInjector(Injector):
                 randomdt=False, velhalfstep=False
             )
 
-            print("Inject {} particles".format(len(particles_dict['x'])))
+            print(f"Inject {len(particles_dict['x'])} particles")
             # We can basically call _libwarpx.libwarpx.warpx_addNParticles()
             # directly as we shouldn't need the wrapper, unless number to
             # inject is 0, but for now we'll be conservative and use the
@@ -292,6 +290,7 @@ class ThermionicInjector(Injector):
                  name=None, profile_decorator=None,
                  unique_particles=True):
         """Sets up user-specified injection for warpX.
+
         Arguments:
             emitter (:class:`mewarpx.emission.Emitter`): Emitter object that
                 will specify positions and velocities of particles to inject.
@@ -301,9 +300,10 @@ class ThermionicInjector(Injector):
                 cell on the cathode surface per timestep
             T (float): Cathode temperature (K)
             WF (float): Cathode work function (eV)
-            A (float): Coefficient of emission in Amp/m^2/K^2. Default 1.2e6.
+            A (float): Coefficient of emission in Amp/m^2/K^2. Default is
+                the theoretical max, approximately 1.2e6.
             allow_poisson (bool): If True and < npart_per_cellstep electrons
-                would be injected per cell; inject whole electrons with a
+                would be injected per cell, inject whole electrons with a
                 Poisson distribution. If False, inject fractions of electrons.
                 Default False.
             wfac (float): Constant factor applied to variable particle
@@ -317,7 +317,7 @@ class ThermionicInjector(Injector):
                 injection methods and related functions.
             unique_particles (bool): Whether WarpX will keep all particles
                 given it from every processor (True) or keep only a fraction of
-                particles based on processor count (False).
+                particles based on processor count (False). Default True.
         """
         # Save class parameters
         self.emitter = emitter
@@ -348,8 +348,9 @@ class ThermionicInjector(Injector):
         # Determine weight and injection numbers
         electrons_per_step = (mwxutil.J_RD(self.T, self.WF, self.A)
                               * area * dt / picmi.constants.q_e)
-        print("Area", area, "dt", dt, "J",
-              mwxutil.J_RD(self.T, self.WF, self.A))
+        print(f"Setting up thermionic paticle injection. Area {area:.3g} m^2, "
+              f"dt {dt:.3e} s, J {mwxutil.J_RD(self.T, self.WF, self.A):.3g} "
+              "A/m^2.")
         print(("Emission current corresponds to injection of {:.2e} "
                "electrons per timestep").format(electrons_per_step))
         max_injections = int(round(npart_per_cellstep *
@@ -371,7 +372,6 @@ class ThermionicInjector(Injector):
                    "step, each with weight {:.2e}").format(
                        self.ptcl_per_step, self.weight))
         callbacks.installparticleinjection(self.inject_particles)
-        #callbacks.installafterstep(self.inject_particles)
 
     def inject_particles(self):
         """Perform the actual injection!"""
@@ -429,6 +429,7 @@ class ThermionicInjector(Injector):
         """
         callbacks.uninstallparticleinjection(self.inject_particles)
 
+
 class BaseEmitter(object):
 
     """Parent class of both Emitter (which handles injection from a surface or
@@ -446,6 +447,7 @@ class BaseEmitter(object):
         - ``geoms`` is a property containing a list of simulation geometries
           supported by the Emitter, as strings
     """
+
     # Stores a list of functions that are used to adjust variable particle
     # weights.
     _wfnlist = None
@@ -491,6 +493,7 @@ class BaseEmitter(object):
         """Change standard arrays into format expected by an injector.
         The transfer to an injector uses a dict so that optional
         arguments can be passed, or additional arguments added.
+
         Arguments:
             x (np.ndarray): n-shape position array
             y (np.ndarray): n-shape position array
@@ -513,6 +516,7 @@ class BaseEmitter(object):
 
     def _get_E_total(self, vx, vy, vz, q, m, w):
         """Calculate initial particle energies.
+
         Arguments:
             vx (np.ndarray): n-length array of velocity x-components
             vy (np.ndarray): n-length array of velocity y-components
@@ -520,6 +524,7 @@ class BaseEmitter(object):
             q (float): Charge of the particles, usually species.sq.
             m (float): Mass of the particles, usually species.sm.
             w (np.ndarray): Variable particle weight, n-shape
+
         The conductor voltage V of the conductor the particle is ejected from
         must also be set for this object.
         """
@@ -532,12 +537,14 @@ class BaseEmitter(object):
     def get_newparticles(self, npart, w, q, m, rseed=None,
                          randomdt=True, velhalfstep=True):
         """Return dict with coordinates, velocities, and KE
+
         Note:
             This function SHOULD (but doesn't in WarpX yet)  handle the random
             timestep advancement and the negative half-step velocity push. They
             can be turned off if desired.  No leapfrogging is done in the
             initial random advancement, which could be a (hopefully very minor)
             source of error.
+
         Arguments:
             npart (int): Total number of particles to inject
             w (float): Weight of the particles
@@ -553,9 +560,11 @@ class BaseEmitter(object):
             velhalfstep (bool): If True, push the velocities a negative
                 half-step using the E-field. Aligns position and velocities
                 correctly for the leapfrog algorithm.
+
         Returns:
             particle_dict (dict): Contains lists, each with length equal to the
             number of particles:
+
                 - ``x``, ``y``, and ``z`` contain initial positions
                 - ``vx``, ``vy``, and ``vz`` contain initial velocities
                 - ``E_total`` contains initial energy of each particle, kinetic
@@ -638,6 +647,7 @@ class BaseEmitter(object):
         """Per-subclass implementation of generating new particle data.
         See :func:`mewarpx.emission.Emitter.get_newparticles` for details on
         arguments.
+
         Returns:
             x, y, z, vx, vy, vz (np.array): Each must be a 1D numpy array.
         """
@@ -646,6 +656,7 @@ class BaseEmitter(object):
 
     def add_wfn(self, wfn):
         """Add a variable weight function to the emitter.
+
         Arguments:
             wfn (function): This must take in a particle dictionary with
                 positions, velocities, and existing weights, and return a new
@@ -656,10 +667,12 @@ class BaseEmitter(object):
 
         self._wfnlist.append(wfn)
 
+
 class Emitter(BaseEmitter):
 
     """Parent class for emission from a surface.
     All Emitter objects are expected to contain:
+
         - ``area`` is a property containing the area in m^2
         - ``cell_count`` is a property containing the number of mesh cells
           spanned by the Emitter
@@ -678,6 +691,7 @@ class Emitter(BaseEmitter):
     def __init__(self, T, conductor=None, use_Schottky=True,
                  emission_type='thermionic'):
         """Default initialization for all Emitter objects.
+
         Arguments:
             T (float): Emitter temperature in Kelvin. Determines particle
                 velocity distribution.
@@ -725,14 +739,17 @@ class Emitter(BaseEmitter):
 
     def apply_Schottky_weights(self, particle_dict):
         """Variable weight function for field-enhanced Schottky emission.
+
         Arguments:
             particle_dict (dict): Particle dictionary returned by
                 get_newparticles() during standard thermionic injection. Any
                 existing variable weights in the dictionary should be
                 normalized to match the total zero-field saturation current of
                 the Emitter without any Schottky enhancement.
+
         Returns:
             new_weights (np.ndarray): 1D array of updated particle weights.
+
         Notes:
             This function requires the "T" attribute of the Emitter to be set
             for specifying the emitter temperature in Kelvin, and also requires
@@ -742,10 +759,12 @@ class Emitter(BaseEmitter):
 
     def get_normals(self, x, y, z):
         """Calculate local surface normal at specified coordinates.
+
         Arguments:
             x (np.ndarray): x-coordinates of emitted particles (in meters).
             y (np.ndarray): y-coordinates of emitted particles (in meters).
             z (np.ndarray): z-coordinates of emitted particles (in meters).
+
         Returns:
             normals (np.ndarray): nx3 array containing the outward surface
                 normal vector at each particle location.
@@ -753,9 +772,11 @@ class Emitter(BaseEmitter):
         raise NotImplementedError('Normal calculations must be implemented by'
                                   + ' Emitter sub-classes.')
 
+
 class ZPlaneEmitter(Emitter):
 
     """This is the standard injection for a planar cathode."""
+
     geoms = ['Z', 'XZ', 'XYZ']
 
     def __init__(self, conductor, T, xmin=None, xmax=None,
@@ -855,10 +876,12 @@ class ZPlaneEmitter(Emitter):
 
     def get_normals(self, x, y, z):
         """Calculate local surface normal at specified coordinates.
+
         Arguments:
             x (np.ndarray): x-coordinates of emitted particles (in meters).
             y (np.ndarray): y-coordinates of emitted particles (in meters).
             z (np.ndarray): z-coordinates of emitted particles (in meters).
+
         Returns:
             normals (np.ndarray): nx3 array containing the outward surface
                 normal vector at each particle location.
