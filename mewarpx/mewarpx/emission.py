@@ -327,9 +327,8 @@ class ThermionicInjector(Injector):
         area = self.emitter.area
         dt = mwxrun.get_dt()
         if (area is None) or (area <= 0.0) or (dt <= 0.0):
-            raise ValueError(
-                ("area {} or dt {} is invalid for injection.").format(
-                    area, dt))
+            raise ValueError(f"area {area} or dt {dt}"
+                             f" is invalid for injection.")
 
         # Determine weight and injection numbers
         electrons_per_step = (mwxutil.J_RD(self.T, self.WF, self.A)
@@ -337,8 +336,8 @@ class ThermionicInjector(Injector):
         print(f"Setting up thermionic paticle injection. Area {area:.3g} m^2, "
               f"dt {dt:.3e} s, J {mwxutil.J_RD(self.T, self.WF, self.A):.3g} "
               "A/m^2.")
-        print(("Emission current corresponds to injection of {:.2e} "
-               "electrons per timestep").format(electrons_per_step))
+        print(f"Emission current corresponds to injection of "
+              f"{electrons_per_step:.2e} electrons per timestep")
         max_injections = int(round(npart_per_cellstep *
                                    self.emitter.cell_count))
 
@@ -451,7 +450,7 @@ class BaseEmitter(object):
 
         if geom not in self.geoms:
             raise ValueError(
-               "%s geometry not supported by this Emitter" % geom)
+                f"{geom} geometry not supported by this Emitter")
 
         return geom
 
@@ -776,7 +775,7 @@ class ZPlaneEmitter(Emitter):
                 "emission_type").
         """
         # Default initialization
-        if not T:
+        if T is None:
             T = conductor.T
         super(ZPlaneEmitter, self).__init__(T=T, conductor=conductor, **kwargs)
 

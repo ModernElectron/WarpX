@@ -36,7 +36,6 @@ class DiodeRun_V1(object):
     # is set to 0.
     V_ANODE_EXPRESSION = None
     # Anode offset distance from the boundary
-    ANODE_OFFSET = 0
 
     # ### VACUUM ###
     # Cathode anode distance
@@ -154,7 +153,7 @@ class DiodeRun_V1(object):
 
         self.dim = dim
         if self.dim not in [1, 2, 3]:
-            raise ValueError("Unavailable dimension {}".format(self.dim))
+            raise ValueError(f"Unavailable dimension {self.dim}")
         self.rz = rz
         if self.dim != 2 and self.rz:
             raise ValueError("dim=2 required for RZ")
@@ -292,10 +291,8 @@ class DiodeRun_V1(object):
                 self.NY = int(round(self.PERIOD/self.RES_LENGTH))
 
         print(
-            ("Creating grid with NX={}, NY={}, NZ={} and x, y, z limits of "
-             "[[{:.4g}, {:.4g}], [{:.4g}, {:.4g}], [{:.4g}, {:.4g}]]").format(
-                 self.NX, self.NY, self.NZ,
-                 xmin, xmax, ymin, ymax, zmin, zmax)
+            f"Creating grid with NX={self.NX}, NY={self.NY}, NZ={self.NZ} and x, y, z limits of "
+             "[[{xmin:.4g}, {xmax:.4g}], [{ymin:.4g}, {ymax:.4g}], [{zmin:.4g}, {zmax:.4g}]]"
         )
 
         # create the grid
@@ -412,7 +409,7 @@ class DiodeRun_V1(object):
         # # Subtract small z value for the anode plate not to land exactly on the
         # # grid
         self.anode_plane = assemblies.ZPlane(
-            V=self.V_ANODE, z=self.D_CA - self.ANODE_OFFSET,
+            V=self.V_ANODE, z=self.D_CA,
             zsign=1, WF=self.ANODE_PHI, T=self.ANODE_TEMP,
             name='anode_plane'
         )
@@ -508,8 +505,8 @@ class DiodeRun_V1(object):
             self.init_Ar_gas()
         else:
             raise NotImplementedError(
-                "Inert gas is not yet implemented in mewarpx with "
-                "INERT_GAS_TYPE = {}".format(self.INERT_GAS_TYPE)
+                f"Inert gas is not yet implemented in mewarpx with "
+                 "INERT_GAS_TYPE = {self.INERT_GAS_TYPE}"
             )
 
     def init_He_gas(self):
