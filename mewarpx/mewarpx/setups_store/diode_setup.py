@@ -84,7 +84,7 @@ class DiodeRun_V1(object):
 
     # [[[TODO ONCE IN WARPX]]]
     # # Whether to use Schottky injection
-    USE_SCHOTTKY = True
+    USE_SCHOTTKY = False
     # # Noninteracting run - only inject trace particles and do field solve once
     NONINTERAC = False
     # # Number of particles injected each noninteracting wave

@@ -570,6 +570,9 @@ class BaseEmitter(object):
             for wfn in self._wfnlist:
                 particle_dict['w'] = wfn(particle_dict)
 
+        if self.use_Schottky:
+            raise RuntimeError("Error: Schottky enhancement not currently implemented!")
+
         # if (self.use_Schottky and abs(q + e)/e < 1e-6
         #         and abs(m - m_e)/m_e < 1e-6):
         #     particle_dict['w'] = self.apply_Schottky_weights(particle_dict)
