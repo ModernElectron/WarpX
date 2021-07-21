@@ -4,15 +4,6 @@ import numpy as np
 
 from mewarpx import util as mwxutil
 
-def check_particle_nums():
-    from mewarpx import mwxrun
-    return mwxrun.mwxrun.get_npart() < 40000
-
-def add_particles():
-    from pywarpx import _libwarpx
-    # add 10,000 particles
-    _libwarpx.add_particles(x=np.zeros((10000)), y=np.zeros((10000)), z=np.zeros((10000)))
-
 @pytest.mark.parametrize(
     ("name"),
     [
@@ -31,7 +22,7 @@ def test_capacitive_discharge_custom_criteria(capsys, name):
     from mewarpx import testing_util
     from mewarpx.setups_store import diode_setup
     from mewarpx.mwxrun import mwxrun
-    from pywarpx import callbacks
+    from pywarpx import callbacks, _libwarpx
 
     # Include a random run number to allow parallel runs to not collide. Using
     # python randint prevents collisions due to numpy rseed below
@@ -83,6 +74,17 @@ def test_capacitive_discharge_custom_criteria(capsys, name):
         init_simcontrol=True,
         init_warpx=True
     )
+
+    def check_particle_nums():
+        return mwxrun.get_npart() < 40000
+
+    def add_particles():
+        # add 10,000 particles
+        _libwarpx.add_particles(
+            species_name='electrons', x=np.zeros((10000)),
+            y=np.zeros((10000)), z=np.zeros((10000))
+        )
+
     run.control.add_checker(check_particle_nums)
 
     callbacks.installafterstep(add_particles)
@@ -95,16 +97,9 @@ def test_capacitive_discharge_custom_criteria(capsys, name):
     # Cleanup and final output                                            #
     #######################################################################
 
-    if capsys is not None:
-        out, _ = capsys.readouterr()
+    out, _ = capsys.readouterr()
 
-        print(out)
-        # make sure out isn't empty
-        outstr = "SimControl: Termination from criteria: check_particle_nums"
-        assert outstr in out
-    else:
-        assert False, "This wasn't run in pytest, but it passed otherwise."
-
-
-if __name__ == '__main__':
-    test_capacitive_discharge_custom_criteria(None, "Run2D")
+    print(out)
+    # make sure out isn't empty
+    outstr = "SimControl: Termination from criteria: check_particle_nums"
+    assert outstr in out
