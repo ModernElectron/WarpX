@@ -260,7 +260,6 @@ class ArrayPlot(object):
 
     def slice_array(self):
         self.dim = len(self.array.shape)
-        print('DIM ', self.dim)
         xaxis_idx, yaxis_idx, sliceaxis_idx, self.sliceaxis_str = (
             get_axis_idxs(self.params["xaxis"], self.params["yaxis"],
                                self.dim))
@@ -363,15 +362,8 @@ class ArrayPlot(object):
         # and choose contours in both regions.
         norm = self.norm
         contour_points = self._gen_plot_contours()
-        print("contour points", contour_points)
-        #print("CONTOUR POINTS SHAPE ", contour_points.shape)
-        print("xaxisvec", len(self.xaxisvec))
-        print("yaxisvec", len(self.yaxisvec))
         [X, Y] = np.meshgrid(self.xaxisvec, self.yaxisvec)
         # Draw filled contours
-        print("SHAPE ", self.array[:, :].shape)
-        print("X SHAPE", X.shape)
-        print("Y SHAPE", Y.shape)
         if self.params["draw_surface"]:
             self.contours = self.ax.plot_surface(X*1e6, Y*1e6, self.array[:, :],
                                                  norm=norm,
@@ -642,8 +634,6 @@ def plot_parameters(sim_info, what_to_plot, plot_name, diag_step=None):
     for param in what_to_plot:
         if param == 'rho':
             data = np.array(mwxrun.get_gathered_rho_grid()[0])
-            print('SHAPE', np.shape(data))
-            print('TYPE ', type(data))
 
             fig, ax = plt.subplots(1, 1, figsize=(14, 14))
             ArrayPlot(
@@ -654,8 +644,6 @@ def plot_parameters(sim_info, what_to_plot, plot_name, diag_step=None):
             )
         elif param == 'phi':
             data = np.array(mwxrun.get_gathered_phi_grid(include_ghosts=False)[0])
-            print('SHAPE', np.shape(data))
-            print('TYPE ', type(data))
 
             fig, ax = plt.subplots(1, 1, figsize=(14, 14))
             ArrayPlot(
