@@ -1,18 +1,16 @@
 from mewarpx import util as mwxutil
-
-from picmistandard import simulation
 mwxutil.init_libwarpx(ndim=2, rz=False)
-
-from minerva import util as minutil
 
 from pywarpx import picmi
 
 from mewarpx import assemblies, emission, mepicmi
+from mewarpx.poisson_pseudo_1d import PoissonSolverPseudo1D
 
 from mewarpx.mwxrun import mwxrun
 from mewarpx.diags_store import diag_base
+from mewarpx.mcc_wrapper import MCC
 
-constants = picmi.constants
+import mewarpx.mwxconstants as constants
 
 ####################################
 # physics parameters
@@ -20,7 +18,7 @@ constants = picmi.constants
 
 P_INERT = 2.0 # torr
 T_INERT = 300.0 # K
-N_INERT = (P_INERT * minutil.torr_cgs) / (minutil.kb_cgs * T_INERT) # m^-3
+N_INERT = (P_INERT * constants.torr_SI) / (constants.kb_J * T_INERT) # m^-3
 
 D_CA = 1e-4 # m
 V_bias = 30 # V
@@ -38,11 +36,11 @@ ymin = 0.0
 
 xmax = D_CA / ny * nx
 ymax = D_CA
-number_per_cell_eacg_dim = [16, 16]
+number_per_cell_each_dim = [16, 16]
 
-TOTAL_TIME = 1.0e-9 # s
-DIAG_INTERVAL = 1.0e-10
-DT = 1.0e-12 # s
+TOTAL_TIME = 1e-7 # s
+DIAG_INTERVAL = 1.0e-9
+DT = 0.5e-12 # s
 
 max_steps = int(TOTAL_TIME / DT)
 diag_steps = int(DIAG_INTERVAL / DT)
@@ -50,58 +48,8 @@ diagnostic_intervals = '::%i' % diag_steps
 
 print('Setting up simulation with')
 print(' dt = %.3e s' % DT)
-print(' Total tine = %.3e s (%i timesteps)' % (TOTAL_TIME, max_steps))
+print(' Total time = %.3e s (%i timesteps)' % (TOTAL_TIME, max_steps))
 print(' Diag time = %.3e (%i timesteps)' % (DIAG_INTERVAL, diag_steps))
-
-#################################
-# physics components
-################################
-
-electrons = mepicmi.Species(
-    particle_type='electron',
-    name='electrons'
-)
-
-ions = mepicmi.Species(
-    particle_type='Ar',
-    name='ar_ions',
-    charge='q_e',
-)
-
-# MCC Collisions
-cross_sec_direc = '../../../warpx-data/MCC_cross_sections/Ar/'
-mcc_electrons = picmi.MCCCollisions(
-    name='coll_elec',
-    species=electrons,
-    background_density=N_INERT,
-    background_temperature=T_INERT,
-    background_mass=ions.mass,
-    scattering_processes={
-        'elastic': {
-            'cross_section': cross_sec_direc+'electron_scattering.dat'
-        },
-        'ionization': {
-            'cross_section': cross_sec_direc+'ionization.dat',
-            'energy': 15.7596112,
-            'species': ions
-        }
-    }
-)
-
-mcc_ions = picmi.MCCCollisions(
-    name='coll_ion',
-    species=ions,
-    background_density=N_INERT,
-    background_temperature=T_INERT,
-    scattering_processes={
-        'elastic': {
-            'cross_section': cross_sec_direc+'ion_scattering.dat'
-        },
-        'back': {
-            'cross_section': cross_sec_direc+'ion_back_scatter.dat'
-        }
-    }
-)
 
 #####################################
 # grid and solver
@@ -125,8 +73,31 @@ grid = picmi.Cartesian2DGrid(
     warpx_potential_hi_z=V_bias,
 )
 
-solver = picmi.ElectrostaticSolver(
-    grid=grid, method='Multigrid', required_precision=1e-6
+solver = PoissonSolverPseudo1D(grid=grid)
+
+#################################
+# physics components
+################################
+
+electrons = mepicmi.Species(
+    particle_type='electron',
+    name='electrons',
+    warpx_grid=grid,
+    warpx_n_macroparticle_per_cell=number_per_cell_each_dim
+)
+
+ions = mepicmi.Species(
+    particle_type='Ar',
+    name='ar_ions',
+    charge='q_e',
+    warpx_grid=grid,
+    warpx_n_macroparticle_per_cell=number_per_cell_each_dim
+)
+
+# MCC Collisions
+mcc_wrapper = MCC(
+    electrons, ions, T_INERT=T_INERT, N_INERT=N_INERT,
+    exclude_collisions=['charge_exchange']
 )
 
 ###################################
@@ -146,48 +117,28 @@ field_diag = picmi.FieldDiagnostic(
 # simulation setup
 ################################
 
-sim = picmi.Simulation(
-    solver=solver,
-    time_step_size=DT,
-    max_steps=max_steps,
-    warpx_collisions=[mcc_electrons, mcc_ions]
-)
+mwxrun.simulation.solver = solver
+mwxrun.simulation.time_step_size = DT
+mwxrun.simulation.max_steps = max_steps
 
-sim.add_species(
-    electrons,
-    layout=picmi.GriddedLayout(
-        n_macroparticle_per_cell=number_per_cell_eacg_dim,
-        grid=grid
-    )
-)
-
-sim.add_species(
-    ions,
-    layout=picmi.GriddedLayout(
-        n_macroparticle_per_cell=number_per_cell_eacg_dim,
-        grid=grid
-    )
-)
-
-#sim.add_diagnostic(field_diag)
-
-mwxrun.init_run(simulation=sim)
+mwxrun.simulation.add_diagnostic(field_diag)
+mwxrun.init_run()
 
 ######################################
 # Add ME emission
 #####################################
-T_cathode = 1100.0 # K
+T_cathode = 1100.0 + 273.15 # K
 WF_cathode = 2.0 # eV
 
 cathode = assemblies.ZPlane(z=1e-10, zsign=-1, V=0, T=T_cathode,
                             WF=WF_cathode,
                             name='cathode')
 emitter = emission.ZPlaneEmitter(conductor=cathode, T=T_cathode,
-                                use_Schottky=False)
+                                 use_Schottky=False)
 injector = emission.ThermionicInjector(emitter=emitter, species=electrons,
-                                        npart_per_cellstep=5,
-                                        T=T_cathode, WF=WF_cathode,
-                                        A=6e5)
+                                       npart_per_cellstep=50,
+                                       T=T_cathode, WF=WF_cathode,
+                                       A=6e5)
 
 ####################################
 # Add ME diagnostic
@@ -198,5 +149,4 @@ diag_base.TextDiag(diag_steps=diag_steps, preset_string='perfdebug')
 ##################################
 # Simulation run
 #################################
-max_steps = 10
-sim.step(1)
+mwxrun.simulation.step(max_steps)

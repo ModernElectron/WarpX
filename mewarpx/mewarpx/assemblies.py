@@ -1,6 +1,10 @@
-import numpy as np
+"""
+Assembly implementations.
+"""
+
 from mewarpx.mwxrun import mwxrun
 from pywarpx import picmi
+import numpy as np
 
 class Assembly(object):
 
