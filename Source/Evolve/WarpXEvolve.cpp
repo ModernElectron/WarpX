@@ -166,7 +166,6 @@ WarpX::Evolve (int numsteps)
         if (do_electrostatic != ElectrostaticSolverAlgo::None)
         {
             const bool skip_deposition = true;
-            if (warpx_py_particleinjection) warpx_py_particleinjection();
             PushParticlesandDepose(cur_time, skip_deposition);
         }
         // Electromagnetic case: multi-J algorithm
