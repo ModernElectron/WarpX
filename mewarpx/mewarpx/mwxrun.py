@@ -52,6 +52,10 @@ class MEWarpXRun(object):
         self._set_geom_str()
         self._set_grid_params()
 
+        # loop over all species to build their pid_dict's
+        for species in self.simulation.species:
+            species.init_pid_dict()
+
     def _set_geom_str(self):
         """Set the geom_str variable corresponding to the geometry used.
 
@@ -235,30 +239,5 @@ class MEWarpXRun(object):
                 raise
         _libwarpx.set_phi_grid_fp(self.lev)
 
-    def add_particle_pid(self, species_name, pid_name):
-        """Wrapper to add a new PID to the particle data arrays at runtime.
-
-        Arguments:
-            species_name (str): Name of the species for which the new PID will
-                be added
-            pid_name (str): Name of the new PID.
-        """
-        _libwarpx.add_real_comp(species_name, pid_name)
-
-    def get_particle_array_from_pid(self, species_name, pid_name, level=0):
-        """Wrapper to grab particle data for a specific PID.
-
-        Arguments:
-            species_name (str): Name of the species for which the particle
-                data is collected.
-            pid_name (str): Name of the PID to grab data for.
-            level (int): Level for which to grab the data.
-
-        Returns:
-            A list of numpy arrays. The list has one element for every tile
-            with the numpy array holding the particle data for the requested
-            PID.
-        """
-        return _libwarpx.get_particle_arrays(species_name, pid_name, level)
 
 mwxrun = MEWarpXRun()
