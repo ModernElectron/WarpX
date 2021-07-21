@@ -431,6 +431,7 @@ def add_particles(species_name,
         x, y, z, ux, uy, uz, attr.shape[-1], attr, unique_particles
     )
 
+
 def get_particle_count(species_name):
     '''
 
@@ -451,6 +452,7 @@ def get_particle_count(species_name):
     return libwarpx.warpx_getNumParticles(
         ctypes.c_char_p(species_name.encode('utf-8'))
     )
+
 
 def get_particle_structs(species_name, level):
     '''
