@@ -57,12 +57,14 @@ class Injector(object):
         the remainder. If unique_particles is False, WarpX essentially does the
         particle discarding, so each processor should inject the whole number
         of particles to start.
+
         Arguments:
             npart_total (int): Integer number of total particles to insert this
                 timestep.
             unique_particles (bool): If True, WarpX keeps all particles sent to
                 it. If False, it only keeps a processor's fraction of total
                 particles.
+
         Returns:
             npart (int): Integer number of total particles for this processor
                 to insert this timestep.
@@ -94,6 +96,7 @@ class Injector(object):
     def init_injectedparticles(self, fieldlist):
         """Set up the injected particles array. Call before
         append_injectedparticles.
+
         Arguments:
             fieldlist (list): List of string titles for the fields. Order is
                 important; it must match the order for future particle appends
@@ -114,6 +117,7 @@ class Injector(object):
             check since this is called many times.
             Since a parallelsum is performed, call this with only the species
             argument if no particles are being added by this processor.
+
         Arguments:
             species: [TODO - adapt to WarpX]
             E_total (np.ndarray): Array of length npart with E_total values.
@@ -148,6 +152,7 @@ class Injector(object):
 
     def append_injectedparticles(self, data):
         """Append one or more lines of injected particles data.
+
         Arguments:
             data (np.ndarray): Array of shape (m) or (n, m) where m is the
                 number of fields and n is the number of rows of data to append.
@@ -156,9 +161,11 @@ class Injector(object):
 
     def get_injectedparticles(self, clear=False):
         """Retrieve a copy of injectedparticles data.
+
         Arguments:
             clear (bool): If True, clear the particle data rows entered (field
                 names are still initialized as before). Default False.
+
         Returns:
             injectedparticles_dict (collections.OrderedDict): Keys are the
                 originally passed field strings for lost particles. Values are
@@ -176,6 +183,7 @@ class FixedNumberInjector(Injector):
                  weight=0., rseed=None,
                  name=None, unique_particles=True):
         """Sets up user-specified injection with fixed timestep and weights.
+
         Arguments:
             emitter (:class:`mewarpx.emission.Emitter`): Emitter object that
                 will specify positions and velocities of particles to inject.
@@ -236,17 +244,13 @@ class FixedNumberInjector(Injector):
             )
 
             print(f"Inject {len(particles_dict['x'])} particles")
-            # We can basically call _libwarpx.libwarpx.warpx_addNParticles()
-            # directly as we shouldn't need the wrapper, unless number to
-            # inject is 0, but for now we'll be conservative and use the
-            # wrapper.
 
             # Note some parts of WarpX call the variables ux and some parts vx,
             # and they're referred to as momenta. But I don't see anywhere
             # they're actually used as momenta including the particle mass -
             # the actual update is in Source/Particles/Pusher/UpdatePosition.H
             _libwarpx.add_particles(
-                species_number=self.species.species_number,
+                species_name=self.species.name,
                 x=particles_dict['x'],
                 y=particles_dict['y'],
                 z=particles_dict['z'],
@@ -377,17 +381,12 @@ class ThermionicInjector(Injector):
             randomdt=False, velhalfstep=False
         )
 
-        # We can basically call _libwarpx.libwarpx.warpx_addNParticles()
-        # directly as we shouldn't need the wrapper, unless number to
-        # inject is 0, but for now we'll be conservative and use the
-        # wrapper.
-
         # Note some parts of WarpX call the variables ux and some parts vx,
         # and they're referred to as momenta. But I don't see anywhere
         # they're actually used as momenta including the particle mass -
         # the actual update is in Source/Particles/Pusher/UpdatePosition.H
         _libwarpx.add_particles(
-            species_number=self.species.species_number,
+            species_name=self.species.name,
             x=particles_dict['x'],
             y=particles_dict['y'],
             z=particles_dict['z'],
@@ -405,7 +404,6 @@ class ThermionicInjector(Injector):
                 particles_dict['E_total'],
                 particles_dict.get('w', None)
             )
-
 
 
 class BaseEmitter(object):

@@ -165,8 +165,7 @@ class MEWarpXRun(object):
         """
         npart = 0
         for spec in self.simulation.species:
-            npart += _libwarpx.libwarpx.warpx_getNumParticles(
-                spec.species_number)
+            npart += _libwarpx.get_particle_count(spec.name)
 
         return npart
 
@@ -178,8 +177,7 @@ class MEWarpXRun(object):
         for spec in self.simulation.species:
             if spec.name is None:
                 raise ValueError("Unnamed species are not supported.")
-            npart_dict[spec.name] = _libwarpx.libwarpx.warpx_getNumParticles(
-                spec.species_number)
+            npart_dict[spec.name] = _libwarpx.get_particle_count(spec.name)
 
         return npart_dict
 
@@ -261,8 +259,6 @@ class MEWarpXRun(object):
             with the numpy array holding the particle data for the requested
             PID.
         """
-        return _libwarpx.get_particle_arrays_from_comp_name(
-            species_name, pid_name, level
-        )
+        return _libwarpx.get_particle_arrays(species_name, pid_name, level)
 
 mwxrun = MEWarpXRun()
