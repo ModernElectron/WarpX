@@ -171,17 +171,8 @@ mwxrun.simulation.add_species(
 mwxrun.simulation.add_diagnostic(field_diag)
 # sim.add_diagnostic(restart_dumps)
 
-sim_info = plotting.SimInfo(
-    nxyz=(nx, 0, nz),
-    pos_lims=(xmin, xmax, None, None, zmin, zmax),
-    geom='XZ',
-    dt=DT,
-    periodic=True
-)
-
-
 def plot_on_diag_steps():
-    plotting.plot_parameters_on_interval(sim_info, ['phi', 'rho'], "after_diag_step", diag_steps, mwxrun.get_it())
+    plotting.plot_parameters_on_interval(['phi', 'rho'], "after_diag_step", diag_steps, mwxrun.get_it())
 
 callbacks.installafterstep(plot_on_diag_steps)
 

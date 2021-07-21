@@ -3,6 +3,7 @@ import matplotlib.colors as colors
 import numpy as np
 import copy
 import collections
+from mewarpx.mwxrun import mwxrun
 
 
 class ArrayPlot(object):
@@ -121,12 +122,10 @@ class ArrayPlot(object):
         }
     }
 
-    def __init__(self, siminfo, array, template=None, plot1d=False,
+    def __init__(self, array, template=None, plot1d=False,
                  ax=None, style=None, **kwargs):
         """Plot given array data.
         Arguments:
-            siminfo (runinfo.SimInfo): Object with the simulation info (eg
-                simulation size)
             array (np.ndarray): Numpy array containing the data to plot.
             template (string): One of 'phi', 'E', 'rho', 'barrier', or None;
                 used to determine default labels. Default None.
@@ -203,7 +202,6 @@ class ArrayPlot(object):
             self.params = recursive_update(
                 self.params, self.styles[style])
 
-        self.siminfo = siminfo
         self.array = array
         self.plot1d = plot1d
         if self.template is not None:
@@ -263,13 +261,13 @@ class ArrayPlot(object):
         xaxis_idx, yaxis_idx, sliceaxis_idx, self.sliceaxis_str = (
             get_axis_idxs(self.params["xaxis"], self.params["yaxis"],
                                self.dim))
-        self.xaxisvec = self.siminfo.get_vec(self.params["xaxis"])
+        self.xaxisvec = get_vec(self.params["xaxis"])
         if self.dim == 1:
             z_span = max(self.xaxisvec) - min(self.xaxisvec)
             self.yaxisvec = np.linspace(-z_span/10., z_span/10., 2)
         else:
-            self.yaxisvec = self.siminfo.get_vec(self.params["yaxis"])
-        self.slicevec = (self.siminfo.get_vec(sliceaxis_idx)
+            self.yaxisvec = get_vec(self.params["yaxis"])
+        self.slicevec = (get_vec(sliceaxis_idx)
                          if self.dim == 3 else None)
         self.array = get_2D_field_slice(
             self.array, xaxis_idx, yaxis_idx, self.slicevec,
@@ -457,39 +455,20 @@ class ArrayPlot(object):
             np.concatenate([neglogcontours, lincontours, poslogcontours])))
         return contour_points
 
+def get_vec(axis):
+    nxyz = (mwxrun.nx, mwxrun.ny, mwxrun.nz)
+    pos_lims = (mwxrun.xmin, mwxrun.xmax, mwxrun.ymin, mwxrun.ymax, mwxrun.zmin, mwxrun.zmax)
 
-class SimInfo(object):
-
-    """Store basic simulation parameters used throughout analysis.
-    This must contain:
-        SimInfo.nxyz (int nx, int ny, int nz)
-        SimInfo.pos_lims (floats xmin, xmax, ymin, ymax, zmin, zmax)
-        SimInfo.geom (str 'XZ', 'RZ' or 'XYZ')
-        SimInfo.dt (float)
-        SimInfo.periodic (bool)
-    Note:
-        This base class has been created to provide additional plotting
-        functionality, and allow post-run creation of this object if needed.
-    """
-
-    def __init__(self, nxyz, pos_lims, geom, dt, periodic=True):
-        self.nxyz = nxyz
-        self.pos_lims = pos_lims
-        self.geom = geom
-        self.dt = dt
-        self.periodic = periodic
-
-    def get_vec(self, axis):
-        if axis == 'r':
-            raise ValueError("RZ plotting is not implemented yet.")
-            return self.get_rvec()
-        axis_dict = {0: 0, 1: 1, 2: 2, 'x': 0, 'y': 1, 'z': 2}
-        axis = axis_dict[axis]
-        npts = self.nxyz[axis]
-        xmin = self.pos_lims[2*axis]
-        xmax = self.pos_lims[2*axis + 1]
-        # There is one more point on the grid than cell number
-        return np.linspace(xmin, xmax, npts + 1)
+    if axis == 'r':
+        raise ValueError("RZ plotting is not implemented yet.")
+        return self.get_rvec()
+    axis_dict = {0: 0, 1: 1, 2: 2, 'x': 0, 'y': 1, 'z': 2}
+    axis = axis_dict[axis]
+    npts = nxyz[axis]
+    xmin = pos_lims[2*axis]
+    xmax = pos_lims[2*axis + 1]
+    # There is one more point on the grid than cell number
+    return np.linspace(xmin, xmax, npts + 1)
 
 def recursive_update(d, u):
     """Recursively update dictionary d with keys from u.
@@ -626,7 +605,7 @@ def get_2D_field_slice(data, xaxis, yaxis, slicevec=None, slicepos=None):
     return dslice
 
 
-def plot_parameters(sim_info, what_to_plot, plot_name, diag_step=None):
+def plot_parameters(what_to_plot, plot_name, diag_step=None):
     from mewarpx.mwxrun import mwxrun
     if diag_step is not None:
         plot_name += "_" + str(diag_step)
@@ -637,7 +616,7 @@ def plot_parameters(sim_info, what_to_plot, plot_name, diag_step=None):
 
             fig, ax = plt.subplots(1, 1, figsize=(14, 14))
             ArrayPlot(
-                siminfo=sim_info, array=data[:, :, 0],
+                array=data[:, :, 0],
                 template='rho', xaxis='z', yaxis='x', ax=ax,
                 draw_image=True, draw_contourlines=False,
                 cmap='viridis', plot_name="rho_" + plot_name
@@ -647,15 +626,15 @@ def plot_parameters(sim_info, what_to_plot, plot_name, diag_step=None):
 
             fig, ax = plt.subplots(1, 1, figsize=(14, 14))
             ArrayPlot(
-                siminfo=sim_info, array=data,
+                array=data,
                 template='phi', xaxis='z', yaxis='x', ax=ax,
                 draw_image=True, draw_contourlines=False,
                 cmap='viridis', plot_name="phi_" + plot_name
             )
 
 
-def plot_parameters_on_interval(sim_info, what_to_plot, plot_name, interval, current_step):
+def plot_parameters_on_interval(what_to_plot, plot_name, interval, current_step):
     if current_step % interval == 0:
         print("Plotting diagnostic step...")
         diag_step = int(current_step / interval)
-        plot_parameters(sim_info, what_to_plot, plot_name, diag_step=diag_step)
+        plot_parameters(what_to_plot, plot_name, diag_step=diag_step)
