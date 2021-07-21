@@ -216,7 +216,10 @@ class MEWarpXRun(object):
         # the phi grid
         if self.me == 0:
             # get phi multifab from warpx
-            phi_ptr = _libwarpx.get_pointer_full_phi_fp(self.lev)
+            phi_ptr = _libwarpx._get_mesh_field_list(
+                _libwarpx.libwarpx.warpx_getPointerFullPhiFP,
+                self.lev, None, True
+            )
             try:
                 phi_ptr[0][:] = phi_data
             except ValueError as e:

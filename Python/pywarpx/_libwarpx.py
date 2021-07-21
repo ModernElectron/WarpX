@@ -1138,13 +1138,24 @@ def get_mesh_charge_density_cp(level, include_ghosts=True):
     return _get_mesh_field_list(libwarpx.warpx_getChargeDensityCP, level, None, include_ghosts)
 
 
-def set_phi_grid_fp(level):
-    """This writes new phi data to warpx"""
-    libwarpx.warpx_setPhiGridFP(level)
+def get_mesh_charge_density_fp(level, include_ghosts=True):
+    '''
+    This returns a list of numpy arrays containing the mesh charge density
+    data on each grid for this process. This version returns the density on
+    the fine patch for the given level.
+    The data for the numpy arrays are not copied, but share the underlying
+    memory buffer with WarpX. The numpy arrays are fully writeable.
+    Parameters
+    ----------
+        level          : the AMR level to get the data for
+        include_ghosts : whether to include ghost zones or not
+    Returns
+    -------
+        A List of numpy arrays.
+    '''
 
-def get_pointer_full_phi_fp(level):
-    """This returns the full phi grid multifab from warpx"""
-    return _get_mesh_field_list(libwarpx.warpx_getPointerFullPhiFP, level, None, True)
+    return _get_mesh_field_list(libwarpx.warpx_getChargeDensityFP, level, None, include_ghosts)
+
 
 def _get_mesh_array_lovects(level, direction, include_ghosts=True, getlovectsfunc=None):
     assert(0 <= level and level <= libwarpx.warpx_finestLevel())
