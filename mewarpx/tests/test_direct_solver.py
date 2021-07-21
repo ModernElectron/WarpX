@@ -78,9 +78,7 @@ def test_direct_solver():
     # Check rho and phi results against reference data from MGML solver   #
     #######################################################################
 
-    data = np.zeros((NZ + 3, 2))
-    data[:,0] = np.mean(mwxrun.get_gathered_rho_grid()[0], axis=0)[1:-1,0]
-    data[:,1] = np.mean(mwxrun.get_gathered_phi_grid()[0], axis=0)
+    data = np.mean(mwxrun.get_gathered_phi_grid()[0], axis=0)
     # uncomment to generate reference data
     # np.save('reference_data.npy', data)
 
@@ -88,4 +86,4 @@ def test_direct_solver():
         testing_util.test_dir, 'direct_solver', 'reference_data.npy'
     ))
 
-    assert np.allclose(data, ref_data)
+    assert np.allclose(data, ref_data, rtol=0.002)
