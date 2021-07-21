@@ -183,15 +183,6 @@ class MEWarpXRun(object):
 
         return npart_dict
 
-    def get_rho_grid(self, include_ghosts=True):
-        """Get rho segments on the grid for each tile of each processor.
-
-        Returns:
-            A list of numpy arrays, the list has an array for every tile and
-            each array has dimensions given by the number of cells in that tile.
-        """
-        return _libwarpx._get_mesh_field_list(_libwarpx.libwarpx.warpx_getChargeDensityFP, self.lev, None, include_ghosts)
-
     def get_gathered_rho_grid(self, include_ghosts=True):
         """Get the full rho on the grid on the root processor.
 
@@ -202,15 +193,6 @@ class MEWarpXRun(object):
 
         """
         return _libwarpx._get_mesh_field_list(_libwarpx.libwarpx.warpx_getGatheredChargeDensityFP, self.lev, None, include_ghosts)
-
-    def get_phi_grid(self, include_ghosts=True):
-        """Get phi segments on the grid for each tile of each processor.
-
-        Returns:
-            A list of numpy arrays, the list has an array for every tile and
-            each array has dimensions given by the number of cells in that tile.
-        """
-        return _libwarpx._get_mesh_field_list(_libwarpx.libwarpx.warpx_getPhiFP, self.lev, None, include_ghosts)
 
     def get_gathered_phi_grid(self, include_ghosts=True):
         """Get the full phi on the grid on the root processor.
