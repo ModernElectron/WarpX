@@ -4,6 +4,7 @@ import numpy as np
 import copy
 import collections
 
+
 class ArrayPlot(object):
 
     """Initialize and plot the passed array data. Many processing steps."""
@@ -84,7 +85,8 @@ class ArrayPlot(object):
                 'draw_contourlines': False,
                 'scale': 'linear',
             },
-        }
+        },
+        "plot_name": "plot.png"
     }
 
     styles = {
@@ -413,8 +415,9 @@ class ArrayPlot(object):
                                linewidth=1, color="blue", arrowstyle='->',
                                arrowsize=1.5)
 
-        plt.show()
-        plt.savefig("fig.png")
+        #plt.show()
+        print("Saving plot image as", self.params["plot_name"] + ".jpg")
+        plt.savefig(self.params["plot_name"] + ".jpg")
 
     def _gen_plot_contours(self):
         """Generate the list of contours."""
@@ -629,3 +632,42 @@ def get_2D_field_slice(data, xaxis, yaxis, slicevec=None, slicepos=None):
     if xaxis < yaxis:
         return dslice.T
     return dslice
+
+
+def plot_parameters(sim_info, what_to_plot, plot_name, diag_step=None):
+    from mewarpx.mwxrun import mwxrun
+    if diag_step is not None:
+        plot_name += "_" + str(diag_step)
+
+    for param in what_to_plot:
+        if param == 'rho':
+            data = np.array(mwxrun.get_gathered_rho_grid()[0])
+            print('SHAPE', np.shape(data))
+            print('TYPE ', type(data))
+
+            fig, ax = plt.subplots(1, 1, figsize=(14, 14))
+            ArrayPlot(
+                siminfo=sim_info, array=data[:, :, 0],
+                template='rho', xaxis='z', yaxis='x', ax=ax,
+                draw_image=True, draw_contourlines=False,
+                cmap='viridis', plot_name="rho_" + plot_name
+            )
+        elif param == 'phi':
+            data = np.array(mwxrun.get_gathered_phi_grid(include_ghosts=False)[0])
+            print('SHAPE', np.shape(data))
+            print('TYPE ', type(data))
+
+            fig, ax = plt.subplots(1, 1, figsize=(14, 14))
+            ArrayPlot(
+                siminfo=sim_info, array=data,
+                template='phi', xaxis='z', yaxis='x', ax=ax,
+                draw_image=True, draw_contourlines=False,
+                cmap='viridis', plot_name="phi_" + plot_name
+            )
+
+
+def plot_parameters_on_interval(sim_info, what_to_plot, plot_name, interval, current_step):
+    if current_step % interval == 0:
+        print("Plotting diagnostic step...")
+        diag_step = int(current_step / interval)
+        plot_parameters(sim_info, what_to_plot, plot_name, diag_step=diag_step)

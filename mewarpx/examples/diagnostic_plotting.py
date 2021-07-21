@@ -169,8 +169,22 @@ mwxrun.simulation.add_species(
 )
 
 mwxrun.simulation.add_diagnostic(field_diag)
-
 # sim.add_diagnostic(restart_dumps)
+
+sim_info = plotting.SimInfo(
+    nxyz=(nx, 0, nz),
+    pos_lims=(xmin, xmax, None, None, zmin, zmax),
+    geom='XZ',
+    dt=DT,
+    periodic=True
+)
+
+
+def plot_on_diag_steps():
+    plotting.plot_parameters_on_interval(sim_info, ['phi', 'rho'], "after_diag_step", diag_steps, mwxrun.get_it())
+
+callbacks.installafterstep(plot_on_diag_steps)
+
 
 ##########################
 # WarpX and mewarpx initialization
@@ -189,55 +203,3 @@ diag_base.TextDiag(diag_steps=diag_steps, preset_string='perfdebug')
 ##########################
 
 mwxrun.simulation.step()
-
-##########################
-# collect diagnostics
-##########################
-
-# plot stuff
-sim_info = plotting.SimInfo(
-    nxyz=(nx, 0, nz),
-    pos_lims=(xmin, xmax, None, None, zmin, zmax),
-    geom='XZ',
-    dt=DT,
-    periodic=True
-)
-#rho[:, :, 0]
-data = np.array(mwxrun.get_gathered_rho_grid()[0])
-print('SHAPE', np.shape(data))
-print('TYPE ', type(data))
-
-fig, ax = plt.subplots(1, 1, figsize=(14, 14))
-plotter = plotting.ArrayPlot(
-    siminfo=sim_info, array=data[:, :, 0],
-    template='rho', xaxis='z', yaxis='x', ax=ax,
-    draw_image=True, draw_contourlines=False,
-    cmap='viridis',
-)
-
-# if mwxrun.me == 0:
-#     import glob
-#     import yt
-
-#     data_dirs = glob.glob('diags/diags*')
-#     if len(data_dirs) == 0:
-#         raise RuntimeError("No data files found.")
-
-#     for ii, data in enumerate(data_dirs):
-
-#         datafolder = data
-#         print('Reading ', datafolder, '\n')
-#         ds = yt.load( datafolder )
-#         grid_data = ds.covering_grid(
-#             level=0, left_edge=ds.domain_left_edge, dims=ds.domain_dimensions
-#         )
-#         if ii == 0:
-#             rho_data = np.mean(
-#                 grid_data['rho_he_ions'].to_ndarray()[:,:,0], axis=0
-#             ) / constants.q_e
-#         else:
-#             rho_data += np.mean(
-#                 grid_data['rho_he_ions'].to_ndarray()[:,:,0], axis=0
-#             ) / constants.q_e
-#     rho_data /= (ii + 1)
-#     np.save('direct_solver_avg_rho_data.npy', rho_data)
