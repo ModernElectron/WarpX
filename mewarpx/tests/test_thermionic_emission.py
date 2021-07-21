@@ -79,9 +79,7 @@ def test_thermionic_emission():
     mwxrun.simulation.step(max_steps)
 
     net_rho_grid = np.array(mwxrun.get_gathered_rho_grid()[0][:, :, 0])
-    ref_path = os.path.join(mwxutil.mewarpx_dir, "..",
-                            "tests",
-                            "test_files",
+    ref_path = os.path.join(testing_util.test_dir,
                             "thermionic_emission",
                             "thermionic_emission.npy")
     ref_rho_grid = np.load(ref_path)
