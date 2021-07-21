@@ -28,14 +28,13 @@ class DiodeRun_V1(object):
     CATHODE_PHI = 2.4
     # Anode temperature in K
     ANODE_TEMP = 773
-    # # Work Function of Anode.
+    # Work Function of Anode.
     ANODE_PHI = 1.4
     # Anode vacuum bias relative to cathode
     V_ANODE_CATHODE = 2.0
     # Instead of constant voltage, use an expression. In this case, V_CATHODE
     # is set to 0.
     V_ANODE_EXPRESSION = None
-    # Anode offset distance from the boundary
 
     # ### VACUUM ###
     # Cathode anode distance
@@ -53,7 +52,6 @@ class DiodeRun_V1(object):
 
     # ### PHYSICS MODEL SETTINGS ###
     # Beam velocity spread in transverse vs longitudinal
-    # [[[TODO once in WarpX]]]
     TRANSVERSE_FAC = 1.1
 
     # Reflection physics
@@ -182,10 +180,6 @@ class DiodeRun_V1(object):
         print('  Diag time = {self.DIAG_STEPS * self.DT:.3e} s '
               f'({self.DIAG_STEPS} timesteps)')
 
-        # Default null values
-        if self.SPECIES is None:
-            self.SPECIES = []
-
     def setup_run(
         self,
         init_base=True,
@@ -221,8 +215,6 @@ class DiodeRun_V1(object):
             self.init_conductors()
         if init_scraper:
             self.init_scraper()
-        if init_conductors:
-            self.init_conductors()
         if init_inert_gas_ionization:
             self.init_inert_gas_ionization()
         if init_reflection:
@@ -291,8 +283,9 @@ class DiodeRun_V1(object):
                 self.NY = int(round(self.PERIOD/self.RES_LENGTH))
 
         print(
-            f"Creating grid with NX={self.NX}, NY={self.NY}, NZ={self.NZ} and x, y, z limits of "
-             "[[{xmin:.4g}, {xmax:.4g}], [{ymin:.4g}, {ymax:.4g}], [{zmin:.4g}, {zmax:.4g}]]"
+            f"Creating grid with NX={self.NX}, NY={self.NY}, NZ={self.NZ} and "
+            f"x, y, z limits of [[{xmin:.4g}, {xmax:.4g}], [{ymin:.4g}, "
+            f"{ymax:.4g}], [{zmin:.4g}, {zmax:.4g}]]"
         )
 
         # create the grid
@@ -373,9 +366,10 @@ class DiodeRun_V1(object):
 
         self.electrons = mepicmi.Species(
             particle_type='electron', name='electrons',
-            initial_distribution=uniform_plasma_elec
+            initial_distribution=uniform_plasma_elec,
+            warpx_grid=self.grid,
+            warpx_n_macroparticle_per_cell=self.NUMBER_PARTICLES_PER_CELL
         )
-        self.SPECIES.append(self.electrons)
 
     def init_solver(self):
         print('### Init Diode Solver Setup ###')
@@ -506,7 +500,7 @@ class DiodeRun_V1(object):
         else:
             raise NotImplementedError(
                 f"Inert gas is not yet implemented in mewarpx with "
-                 "INERT_GAS_TYPE = {self.INERT_GAS_TYPE}"
+                f"INERT_GAS_TYPE = {self.INERT_GAS_TYPE}"
             )
 
     def init_He_gas(self):
@@ -525,9 +519,10 @@ class DiodeRun_V1(object):
         self.ions = mepicmi.Species(
             particle_type='He', name='he_ions',
             charge='q_e',
-            initial_distribution=uniform_plasma_ion
+            initial_distribution=uniform_plasma_ion,
+            warpx_grid=self.grid,
+            warpx_n_macroparticle_per_cell=self.NUMBER_PARTICLES_PER_CELL
         )
-        self.SPECIES.append(self.ions)
 
         if not hasattr(self, "exclude_collisions"):
             self.exclude_collisions = None
@@ -554,9 +549,11 @@ class DiodeRun_V1(object):
         )
         self.ions = mepicmi.Species(
             particle_type='Ar', name='ar_ions',
-            charge='q_e'
+            charge='q_e',
+            initial_distribution=uniform_plasma_ion,
+            warpx_grid=self.grid,
+            warpx_n_macroparticle_per_cell=self.NUMBER_PARTICLES_PER_CELL
         )
-        self.SPECIES.append(self.ions)
 
         if not hasattr(self, "exclude_collisions"):
             self.exclude_collisions = None
@@ -616,19 +613,6 @@ class DiodeRun_V1(object):
         mwxrun.simulation.solver = self.solver
         mwxrun.simulation.time_step_size = self.DT
         mwxrun.simulation.max_steps = self.TOTAL_TIMESTEPS
-
-        # Add particle species if any were defined
-        if len(self.SPECIES) > 0:
-            if self.NUMBER_PARTICLES_PER_CELL is None:
-                raise ValueError("NUMBER_PARTICLES_PER_CELL cannot be None")
-            for species in self.SPECIES:
-                mwxrun.simulation.add_species(
-                    species,
-                    layout=picmi.GriddedLayout(
-                        n_macroparticle_per_cell=self.NUMBER_PARTICLES_PER_CELL,
-                        grid=self.grid
-                    )
-                )
 
     def init_warpx(self):
         print('### Init Simulation Run ###')

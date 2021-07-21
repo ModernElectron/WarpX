@@ -353,8 +353,8 @@ class ThermionicInjector(Injector):
             self.ptcl_per_step = max_injections
             self.weight = self.wfac * electrons_per_step / self.ptcl_per_step
             self.poisson = False
-            print(f"Using deterministic injection of {self.ptcl_per_step}"
-                  f"step, each with weight {self.weight}")
+            print(f"Using deterministic injection of {self.ptcl_per_step} "
+                  f"particles per step, each with weight {self.weight}")
         callbacks.installparticleinjection(self.inject_particles)
 
     def inject_particles(self):
