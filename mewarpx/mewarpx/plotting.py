@@ -612,7 +612,7 @@ def plot_parameters(what_to_plot, plot_name, diag_step=None):
 
     for param in what_to_plot:
         if param == 'rho':
-            data = np.array(mwxrun.get_gathered_rho_grid()[0])
+            data = np.array(mwxrun.get_gathered_rho_grid(include_ghosts=False)[0])
 
             fig, ax = plt.subplots(1, 1, figsize=(14, 14))
             ArrayPlot(
