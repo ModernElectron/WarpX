@@ -66,7 +66,7 @@ def mkdir_p(path):
 
 
 def ideal_gas_density(p, T):
-    """Calculate neutral gas density (in 1/cm^3) from the ideal gas law using
+    """Calculate neutral gas density (in 1/m^3) from the ideal gas law using
     pressure in Torr.
 
     Arguments:
@@ -74,9 +74,9 @@ def ideal_gas_density(p, T):
         T (float): Mean gas temperature (K)
 
     Returns:
-        N (float): Number density of gas atoms/molecules (1/cm^3)
+        N (float): Number density of gas atoms/molecules (1/m^3)
     """
-    return (p * constants.torr_cgs) / (constants.kb_cgs * T)
+    return (p * constants.torr_cgs) / (constants.kb_cgs * T) * 1e6
 
 
 def get_velocities(num_samples, T, m, emission_type='thermionic',
