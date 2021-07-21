@@ -622,7 +622,7 @@ def plot_parameters(what_to_plot, plot_name, diag_step=None):
                 cmap='viridis', plot_name="rho_" + plot_name
             )
         elif param == 'phi':
-            data = np.array(mwxrun.get_gathered_phi_grid()[0])
+            data = np.array(mwxrun.get_gathered_phi_grid(include_ghosts=False)[0])
 
             fig, ax = plt.subplots(1, 1, figsize=(14, 14))
             ArrayPlot(
