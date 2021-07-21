@@ -1140,18 +1140,25 @@ def get_mesh_charge_density_cp(level, include_ghosts=True):
 
 def get_mesh_charge_density_fp(level, include_ghosts=True):
     '''
+
     This returns a list of numpy arrays containing the mesh charge density
     data on each grid for this process. This version returns the density on
     the fine patch for the given level.
+
     The data for the numpy arrays are not copied, but share the underlying
     memory buffer with WarpX. The numpy arrays are fully writeable.
     Parameters
+
     ----------
+
         level          : the AMR level to get the data for
         include_ghosts : whether to include ghost zones or not
+
     Returns
     -------
+
         A List of numpy arrays.
+
     '''
 
     return _get_mesh_field_list(libwarpx.warpx_getChargeDensityFP, level, None, include_ghosts)
