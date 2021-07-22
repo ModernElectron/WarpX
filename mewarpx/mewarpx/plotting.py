@@ -631,10 +631,3 @@ def plot_parameters(what_to_plot, plot_name, diag_step=None):
                 draw_image=True, draw_contourlines=False,
                 cmap='viridis', plot_name="phi_" + plot_name
             )
-
-
-def plot_parameters_on_interval(what_to_plot, plot_name, interval, current_step):
-    if current_step % interval == 0:
-        print("Plotting diagnostic step...")
-        diag_step = int(current_step / interval)
-        plot_parameters(what_to_plot, plot_name, diag_step=diag_step)

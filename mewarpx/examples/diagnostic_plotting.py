@@ -11,12 +11,9 @@ from mewarpx import mepicmi
 
 from mewarpx.mwxrun import mwxrun
 from mewarpx.mcc_wrapper import MCC
-from mewarpx.diags_store import diag_base
+from mewarpx.diags_store import diag_base, field_diagnostic
 
-from pywarpx import callbacks, picmi
-from mewarpx import plotting
-
-from pywarpx import _libwarpx
+from pywarpx import picmi
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -138,18 +135,6 @@ solver = picmi.ElectrostaticSolver(
 #solver = PoissonSolverPseudo1D(grid=grid)
 
 ##########################
-# diagnostics
-##########################
-
-field_diag = picmi.FieldDiagnostic(
-    name = 'diags',
-    grid = grid,
-    period = diagnostic_intervals,
-    data_list = ['rho_electrons', 'rho_he_ions', 'phi'],
-    write_dir = 'diags/',
-)
-
-##########################
 # simulation setup
 ##########################
 
@@ -170,14 +155,21 @@ mwxrun.simulation.add_species(
     )
 )
 
-mwxrun.simulation.add_diagnostic(field_diag)
+##########################
+# diagnostics
+##########################
+
+field_diag = field_diagnostic.FieldDiagnostic(
+    name = 'diags',
+    grid = grid,
+    diag_steps = diag_steps,
+    diag_data_list = ['rho_electrons', 'rho_he_ions', 'phi'],
+    write_dir = 'diags/',
+    plot_on_diag_step = True,
+    plot_data_list = ['rho', 'phi']
+)
+
 # sim.add_diagnostic(restart_dumps)
-
-def plot_on_diag_steps():
-    plotting.plot_parameters_on_interval(['phi', 'rho'], "after_diag_step", diag_steps, mwxrun.get_it())
-
-callbacks.installafterstep(plot_on_diag_steps)
-
 
 ##########################
 # WarpX and mewarpx initialization
