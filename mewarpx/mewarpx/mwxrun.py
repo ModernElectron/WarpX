@@ -183,16 +183,7 @@ class MEWarpXRun(object):
 
         return npart_dict
 
-    def get_rho_grid(self):
-        """Get rho segments on the grid for each tile of each processor.
-
-        Returns:
-            A list of numpy arrays, the list has an array for every tile and
-            each array has dimensions given by the number of cells in that tile.
-        """
-        return _libwarpx.get_mesh_charge_density_fp(self.lev)
-
-    def get_gathered_rho_grid(self):
+    def get_gathered_rho_grid(self, include_ghosts=True):
         """Get the full rho on the grid on the root processor.
 
         Returns:
@@ -201,18 +192,12 @@ class MEWarpXRun(object):
             multifab object is returned on processors other than root.
 
         """
-        return _libwarpx.get_gathered_charge_density_fp(self.lev)
+        return _libwarpx._get_mesh_field_list(
+            _libwarpx.libwarpx.warpx_getGatheredChargeDensityFP,
+            self.lev, None, include_ghosts
+        )
 
-    def get_phi_grid(self):
-        """Get phi segments on the grid for each tile of each processor.
-
-        Returns:
-            A list of numpy arrays, the list has an array for every tile and
-            each array has dimensions given by the number of cells in that tile.
-        """
-        return _libwarpx.get_mesh_phi_fp(self.lev)
-
-    def get_gathered_phi_grid(self):
+    def get_gathered_phi_grid(self, include_ghosts=True):
         """Get the full phi on the grid on the root processor.
 
         Returns:
@@ -220,7 +205,10 @@ class MEWarpXRun(object):
             domain. In place of the numpy array, a reference to an unpopulated
             multifab object is returned on processors other than root.
         """
-        return _libwarpx.get_gathered_phi_fp(self.lev)
+        return _libwarpx._get_mesh_field_list(
+            _libwarpx.libwarpx.warpx_getGatheredPhiFP,
+            self.lev, None, include_ghosts
+        )
 
     def set_phi_grid(self, phi_data):
         """Sets phi segments on the grid to input phi data"""
@@ -228,7 +216,10 @@ class MEWarpXRun(object):
         # the phi grid
         if self.me == 0:
             # get phi multifab from warpx
-            phi_ptr = _libwarpx.get_pointer_full_phi_fp(self.lev)
+            phi_ptr = _libwarpx._get_mesh_field_list(
+                _libwarpx.libwarpx.warpx_getPointerFullPhiFP,
+                self.lev, None, True
+            )
             try:
                 phi_ptr[0][:] = phi_data
             except ValueError as e:
