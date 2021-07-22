@@ -101,7 +101,8 @@ class Species(picmi.Species):
         """
         return _libwarpx.get_particle_arrays(self.name, pid_name, level)
 
-    def add_particles(self, x, y, z, ux, uy, uz, w, unique_particles, **kwargs):
+    def add_particles(self, x, y, z, ux, uy, uz, w, unique_particles=True,
+                      **kwargs):
         """Wrapper for libwarpx function `add_particles`. It is specifically
         a function of the species class so that it can process and properly
         order the data for each pid.
