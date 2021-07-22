@@ -10,7 +10,8 @@ requires = [
     "psutil",
     "pandas",
     "yt",
-    "numba"
+    "numba",
+    "skimage"
 ]
 
 extras = {
