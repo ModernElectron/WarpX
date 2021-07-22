@@ -851,7 +851,7 @@ class ZPlaneEmitter(Emitter):
 
     def get_normals(self, x, y, z):
         """Calculate local surface normal at specified coordinates.
-        
+
         Arguments:
             x (np.ndarray): x-coordinates of emitted particles (in meters).
             y (np.ndarray): y-coordinates of emitted particles (in meters).
@@ -876,7 +876,7 @@ class ArbitraryEmitter2D(Emitter):
 
     def __init__(self, conductor, T, res_fac=5., transverse_fac=1.0, **kwargs):
         """Construct the emitter based on conductor object and temperature.
-        
+
         Arguments:
             conductor (mewarpx.assemblies object): Conductor to emit from.
             T (float): Temperature in Kelvin.
