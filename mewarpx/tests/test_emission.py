@@ -31,9 +31,6 @@ def test_thermionic_emission():
 
     P_INERT = 1 # torr
     T_INERT = 300 # K
-    N_INERT = (P_INERT * constants.torr_SI) / (constants.kb_J * T_INERT)
-
-    USE_SCHOTTKY = False
 
     D_CA = 5e-4 # m
     VOLTAGE = 25 # V
@@ -53,11 +50,8 @@ def test_thermionic_emission():
         CATHODE_PHI=CATHODE_PHI,
         V_ANODE_CATHODE=VOLTAGE,
         D_CA=D_CA,
-        USE_SCHOTTKY=USE_SCHOTTKY,
-        N_INERT=N_INERT,
+        P_INERT=P_INERT,
         T_INERT=T_INERT,
-        T_ELEC=T_INERT,
-        PLASMA_DENSITY=0,
         NPPC=50,
         NX=NX,
         NZ=NZ,
@@ -66,8 +60,7 @@ def test_thermionic_emission():
         DT=DT,
         TOTAL_TIMESTEPS=max_steps,
         DIAG_STEPS=diag_steps,
-        DIAG_INTERVAL=DIAG_INTERVAL,
-        NUMBER_PARTICLES_PER_CELL=[16, 16]
+        DIAG_INTERVAL=DIAG_INTERVAL
     )
     # Only the functions we change from defaults are listed here
     run.setup_run(
@@ -85,3 +78,4 @@ def test_thermionic_emission():
     ref_rho_grid = np.load(ref_path)
 
     assert np.allclose(net_rho_grid, ref_rho_grid)
+
