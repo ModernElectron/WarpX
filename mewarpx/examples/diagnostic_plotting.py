@@ -3,15 +3,18 @@ Monte-Carlo Collision script based on case 1 from
 Turner et al. (2013) - https://doi.org/10.1063/1.4775084
 """
 
-from mewarpx import mepicmi, util as mwxutil
+from mewarpx import util as mwxutil
 mwxutil.init_libwarpx(ndim=2, rz=False)
 
 from mewarpx.mwxrun import mwxrun
+from mewarpx.poisson_pseudo_1d import PoissonSolverPseudo1D
 from mewarpx.mcc_wrapper import MCC
 from mewarpx.diags_store import diag_base
 
 from pywarpx import callbacks, picmi
 from mewarpx import plotting
+
+from pywarpx import _libwarpx
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -90,11 +93,11 @@ uniform_plasma_ion = picmi.UniformDistribution(
     directed_velocity = [0.] * 3
 )
 
-electrons = mepicmi.Species(
+electrons = picmi.Species(
     particle_type='electron', name='electrons',
     initial_distribution=uniform_plasma_elec
 )
-ions = mepicmi.Species(
+ions = picmi.Species(
     particle_type='He', name='he_ions',
     charge='q_e',
     initial_distribution=uniform_plasma_ion
