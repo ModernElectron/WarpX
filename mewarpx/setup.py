@@ -11,7 +11,7 @@ requires = [
     "pandas",
     "yt",
     "numba",
-    "skimage"
+    "scikit-image"
 ]
 
 extras = {
