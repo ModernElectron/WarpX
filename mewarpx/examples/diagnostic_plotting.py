@@ -4,10 +4,12 @@ Turner et al. (2013) - https://doi.org/10.1063/1.4775084
 """
 
 from mewarpx import util as mwxutil
+
 mwxutil.init_libwarpx(ndim=2, rz=False)
 
+from mewarpx import mepicmi
+
 from mewarpx.mwxrun import mwxrun
-from mewarpx.poisson_pseudo_1d import PoissonSolverPseudo1D
 from mewarpx.mcc_wrapper import MCC
 from mewarpx.diags_store import diag_base
 
@@ -93,11 +95,11 @@ uniform_plasma_ion = picmi.UniformDistribution(
     directed_velocity = [0.] * 3
 )
 
-electrons = picmi.Species(
+electrons = mepicmi.Species(
     particle_type='electron', name='electrons',
     initial_distribution=uniform_plasma_elec
 )
-ions = picmi.Species(
+ions = mepicmi.Species(
     particle_type='He', name='he_ions',
     charge='q_e',
     initial_distribution=uniform_plasma_ion
