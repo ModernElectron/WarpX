@@ -175,6 +175,7 @@ def get_velocities(num_samples, T, m, emission_type='thermionic',
                     transverse_fac=1.0, rseed=None):
 
     """Generate array of random [vx, vy, vz] for cathode-emitted electrons.
+    
     Arguments:
         num_samples (int): Number of particles to generate velocities for
         T (float): Temperature for the electrons (usually material temp) (K)
@@ -190,6 +191,7 @@ def get_velocities(num_samples, T, m, emission_type='thermionic',
         rseed (positive int): If specified, seed the random number generator.
             Used for testing. The random number generator is set back at the
             end of the function.
+            
     Returns:
         velocities (np.ndarray): array of shape (num_samples, 3) with (vx, vy,
         vz) for each electron.
@@ -245,6 +247,7 @@ def get_positions(num_samples, xmin, xmax, ymin=0, ymax=0, z=0,
     """Provide random samples of [x, y, z] for electrons in simulation.
     In x and y, positions are uniformly distributed. In z, positions are
     placed at the emitter.
+    
     Arguments:
         num_samples (int): Number of particles to generate positions for
         xmin (float): Min position in x (meters)
@@ -255,6 +258,7 @@ def get_positions(num_samples, xmin, xmax, ymin=0, ymax=0, z=0,
         rseed (positive int): If specified, seed the random number generator.
             Used for testing. The random number generator is set back at the
             end of the function.
+            
     Returns:
         positions (np.ndarray): Array of shape (num_samples, 3) with positions.
     """
@@ -271,7 +275,6 @@ def get_positions(num_samples, xmin, xmax, ymin=0, ymax=0, z=0,
         np.random.set_state(nprstate)
 
     return x, y, z
-    return (p * constants.torr_cgs) / (constants.kb_cgs * T)
 
 
 def J_RD(T, WF, A):

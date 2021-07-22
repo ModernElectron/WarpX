@@ -30,7 +30,6 @@ def test_circle_emitter():
     # seed instead for initial dataframe generation.
     np.random.seed(671237741)
 
-
     # --- Grid
     nx = 16
     ny = 16
@@ -76,7 +75,8 @@ def test_circle_emitter():
         ion_species=ions,
         T_INERT=T_INERT,
         N_INERT=N_INERT,
-        exclude_collisions=['charge_exchange'])
+        exclude_collisions=['charge_exchange']
+    )
 
     #####################################
     # embedded boundary, grid, and solver

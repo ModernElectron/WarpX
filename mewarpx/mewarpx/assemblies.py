@@ -94,7 +94,7 @@ class Cylinder(Assembly):
             WF (float): Work function (eV)
             name (str): Assembly name
             install_in_simulation (bool): If True and the Assembly is an
-                embedded boundary it will be included in the WarpX fieldsolver
+                embedded boundary it will be included in the WarpX simulation
         """
         super(Cylinder, self).__init__(V=V, T=T, WF=WF, name=name)
         self.center_x = center_x
@@ -133,6 +133,7 @@ class Cylinder(Assembly):
         """
         Calculates Normal of particle inside/outside of conductor to nearest
         surface of conductor
+        
         Arguments:
             px (np.ndarray): x-coordinate of particle in meters.
             py (np.ndarray): y-coordinate of particle in meters.
