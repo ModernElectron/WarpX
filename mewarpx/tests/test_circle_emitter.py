@@ -54,30 +54,6 @@ def test_circle_emitter():
     print(' Total time = %.3e s (%i timesteps)' % (TOTAL_TIME, max_steps))
     print(' Diag time = %.3e (%i timesteps)' % (DIAG_INTERVAL, diag_steps))
 
-    #################################
-    # physics components
-    ################################
-
-    electrons = mepicmi.Species(
-        particle_type='electron',
-        name='electrons'
-    )
-
-    ions = mepicmi.Species(
-        particle_type='Ar',
-        name='ar_ions',
-        charge='q_e',
-    )
-
-    # MCC Collisions
-    MCC(
-        electron_species=electrons,
-        ion_species=ions,
-        T_INERT=T_INERT,
-        N_INERT=N_INERT,
-        exclude_collisions=['charge_exchange']
-    )
-
     #####################################
     # embedded boundary, grid, and solver
     #####################################
@@ -105,28 +81,40 @@ def test_circle_emitter():
     )
 
     #################################
+    # physics components
+    ################################
+
+    electrons = mepicmi.Species(
+        particle_type='electron',
+        name='electrons',
+        warpx_grid=grid,
+        warpx_n_macroparticle_per_cell=number_per_cell_each_dim
+    )
+
+    ions = mepicmi.Species(
+        particle_type='Ar',
+        name='ar_ions',
+        charge='q_e',
+        warpx_grid=grid,
+        warpx_n_macroparticle_per_cell=number_per_cell_each_dim
+    )
+
+    # MCC Collisions
+    MCC(
+        electron_species=electrons,
+        ion_species=ions,
+        T_INERT=T_INERT,
+        N_INERT=N_INERT,
+        exclude_collisions=['charge_exchange']
+    )
+
+    #################################
     # simulation setup
     ################################
 
     mwxrun.simulation.solver = solver
     mwxrun.simulation.time_step_size = DT
     mwxrun.simulation.max_steps = max_steps
-
-    mwxrun.simulation.add_species(
-        electrons,
-        layout=picmi.GriddedLayout(
-            n_macroparticle_per_cell=number_per_cell_each_dim,
-            grid=grid
-        )
-    )
-
-    mwxrun.simulation.add_species(
-        ions,
-        layout=picmi.GriddedLayout(
-            n_macroparticle_per_cell=number_per_cell_each_dim,
-            grid=grid
-        )
-    )
 
     mwxrun.init_run()
 
