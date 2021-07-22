@@ -138,6 +138,7 @@ class Cylinder(Assembly):
             px (np.ndarray): x-coordinate of particle in meters.
             py (np.ndarray): y-coordinate of particle in meters.
             pz (np.ndarray): z-coordinate of particle in meters.
+        
         Returns:
             nhat (np.ndarray): Normal of particles of conductor to nearest
                 surface of conductor.
