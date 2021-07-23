@@ -63,6 +63,7 @@ def test_embedded_cylinder():
 
     # Initialize solver
     run.init_solver()
+    run.init_conductors()
 
     # Initialize the simulation
     run.init_simulation()

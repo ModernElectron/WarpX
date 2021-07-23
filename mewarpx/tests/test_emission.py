@@ -1,6 +1,7 @@
-""" Test pseudo 1D diode run with thermionic emission"""
+"""Test functionality in mewarpx.emission.py"""
 import os
 import numpy as np
+import pandas
 
 from mewarpx import util as mwxutil
 
@@ -79,3 +80,68 @@ def test_thermionic_emission():
 
     assert np.allclose(net_rho_grid, ref_rho_grid)
 
+
+def test_circle_emitter():
+
+    mwxutil.init_libwarpx(ndim=2, rz=False)
+    from pywarpx import picmi
+    from mewarpx.mcc_wrapper import MCC
+    from mewarpx import assemblies, emission, mepicmi, testing_util
+
+    from mewarpx.mwxrun import mwxrun
+
+    # Initialize each run with consistent, randomly-chosen, rseed. Use a random
+    # seed instead for initial dataframe generation.
+    np.random.seed(671237741)
+
+    #####################################
+    # embedded boundary, grid, and solver
+    #####################################
+
+    T_cylinder = 2173.15 # K
+    cylinder = assemblies.Cylinder(
+        center_x=0.2, center_z=0.4, radius=0.1, V=0, T=T_cylinder,
+        WF=1.2, name='circle'
+    )
+
+    mwxrun.init_grid(0, 0.5, 0, 1, 16, 16)
+    solver = picmi.ElectrostaticSolver(
+        grid=mwxrun.grid, method='Multigrid', required_precision=1e-6
+    )
+
+    #################################
+    # physics components
+    ################################
+
+    electrons = mepicmi.Species(particle_type='electron', name='electrons')
+
+    #################################
+    # simulation setup
+    ################################
+
+    mwxrun.simulation.solver = solver
+    mwxrun.init_run()
+
+    ######################################
+    # Add ME emission
+    #####################################
+
+    emitter = emission.ArbitraryEmitter2D(
+        conductor=cylinder, T=T_cylinder, use_Schottky=False, res_fac=10
+    )
+
+    res_dict = emitter.get_newparticles(
+        10000, 1, electrons.sq, electrons.sm, randomdt=False, velhalfstep=False
+    )
+    df = pandas.DataFrame(index=list(range(1)))
+
+    # Compare main results, leave out E_total, since variation is too high
+    for label in ['vx', 'vy', 'vz', 'x', 'y', 'z']:
+        df[label + '_min'] = np.min(res_dict[label])
+        df[label + '_max'] = np.max(res_dict[label])
+        df[label + '_mean'] = np.mean(res_dict[label])
+        df[label + '_std'] = np.std(res_dict[label])
+
+    assert testing_util.test_df_vs_ref(
+        testname="circle_emitter", df=df, margin=0.4
+    )
