@@ -42,7 +42,7 @@ class DiodeRun_V1(object):
 
     # Gas properties
     # String, eg 'He'
-    INERT_GAS_TYPE = None
+    INERT_GAS_TYPE = 'Ar'
     # Specify N_INERT or P_INERT
     N_INERT = None  # m^-3
     P_INERT = None  # in Torr
@@ -358,9 +358,7 @@ class DiodeRun_V1(object):
         )
 
     def init_inert_gas(self):
-        if self.INERT_GAS_TYPE is None:
-            print("No inert gas ionization used")
-        elif self.INERT_GAS_TYPE == 'He':
+        if self.INERT_GAS_TYPE == 'He':
             self.M_ION = 6.67e-27  # kg
         elif self.INERT_GAS_TYPE == 'Ar':
             self.M_ION = 6.63e-26

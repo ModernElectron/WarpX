@@ -1,12 +1,14 @@
 """Test functionality in mewarpx.emission.py"""
+import collections
 import os
 import numpy as np
 import pandas
+import pytest
 
 from mewarpx import util as mwxutil
 
 def test_thermionic_emission():
-    name = "Thermionic Emission"
+    name = "thermionicEmission"
     dim = 2
 
     # Initialize and import only when we know dimension
@@ -82,13 +84,17 @@ def test_thermionic_emission():
 
 
 def test_circle_emitter():
-
+    name = "circleEmitter"
     mwxutil.init_libwarpx(ndim=2, rz=False)
     from pywarpx import picmi
     from mewarpx.mcc_wrapper import MCC
     from mewarpx import assemblies, emission, mepicmi, testing_util
 
     from mewarpx.mwxrun import mwxrun
+
+    # Include a random run number to allow parallel runs to not collide.  Using
+    # python randint prevents collisions due to numpy rseed below
+    testing_util.initialize_testingdir(name)
 
     # Initialize each run with consistent, randomly-chosen, rseed. Use a random
     # seed instead for initial dataframe generation.
@@ -145,3 +151,123 @@ def test_circle_emitter():
     assert testing_util.test_df_vs_ref(
         testname="circle_emitter", df=df, margin=0.4
     )
+
+
+def test_plasma_injector():
+    name = "plasmainjector"
+    mwxutil.init_libwarpx(ndim=2, rz=False)
+    from pywarpx import picmi, _libwarpx
+    from mewarpx import assemblies, emission, testing_util
+    from mewarpx.setups_store import diode_setup
+
+    from mewarpx.mwxrun import mwxrun
+
+    # Include a random run number to allow parallel runs to not collide.  Using
+    # python randint prevents collisions due to numpy rseed below
+    testing_util.initialize_testingdir(name)
+
+    # Initialize each run with consistent, randomly-chosen, rseed. Use a random
+    # seed instead for initial dataframe generation.
+    np.random.seed(11874889)
+
+    run = diode_setup.DiodeRun_V1(
+        dim=2, PERIOD=0.8e-06*256, D_CA=0.8e-06*256, DT=1e-12,
+        TOTAL_TIMESTEPS=3
+    )
+
+    run.setup_run(init_inert_gas=True, init_scraper=False, init_injectors=False)
+
+    volemitter = emission.ZSinDistributionVolumeEmitter(
+        T=1550, zmin=0, zmax=run.D_CA,
+    )
+    volemitter_uniform = emission.UniformDistributionVolumeEmitter(
+        T=1550, zmin=0, zmax=run.D_CA,
+    )
+
+    # Test under-specified error
+    with pytest.raises(ValueError, match='Invalid plasma_density'):
+        emission.PlasmaInjector(
+            emitter=volemitter, species1=run.electrons,
+            species2=run.ions, npart=40000
+        )
+
+    # Test inadequate pressure/temp error
+    with pytest.raises(ValueError, match='Must specify positive'):
+        emission.PlasmaInjector(
+            emitter=volemitter, species1=run.electrons,
+            species2=run.ions, npart=40000,
+            ionization_frac=0.1, P_neutral=3,
+        )
+    '''
+    # Test invalid ionization_frac with a surface emitter
+    with pytest.raises(RuntimeError, match='Cannot use ionization_frac'):
+        emission.PlasmaInjector(
+            emitter=run.emitter, species1=run.electrons,
+            species2=run.ions, npart=40000,
+            ionization_frac=0.1, P_neutral=3, T_neutral=800,
+        )
+    '''
+    # Test overspecified input
+    with pytest.raises(
+        ValueError, match='Specify ionization_frac or plasma_density'
+    ):
+        emission.PlasmaInjector(
+            emitter=volemitter, species1=run.electrons,
+            species2=run.ions, npart=5000,
+            plasma_density=1e19,
+            ionization_frac=0.1, P_neutral=3, T_neutral=800,
+        )
+
+    # Three real injectors
+    # Volume emission with spec'd plasma_density
+    emission.PlasmaInjector(
+        emitter=volemitter, species1=run.electrons, species2=run.ions,
+        npart=2000, plasma_density=1e19,
+    )
+    # Volume emission with spec'd ionization_frac
+    emission.PlasmaInjector(
+        emitter=volemitter_uniform, species1=run.electrons, species2=run.ions,
+        npart=5000, ionization_frac=0.001, P_neutral=3, T_neutral=800,
+        injectoffset=2, name='ionization_frac_based',
+    )
+    '''
+    # Surface emission
+    emission.PlasmaInjector(
+        emitter=run.emitter, species1=run.electrons, species2=run.ions,
+        npart=10000, plasma_density=1e16, injectoffset=2*nstep+1, injectfreq=1,
+        name='surface_based',
+    )
+    '''
+
+    run.init_warpx()
+    mwxrun.simulation.step(3)
+
+    npart_dict = mwxrun.get_npart_species_dict()
+
+    # Gather results to check.  The index call here ensures there's one row to
+    # assign into in the new DataFrame.
+    df = pandas.DataFrame(index=list(range(1)))
+
+    # grab particle data
+    for species in [run.electrons, run.ions]:
+        sname = species.name
+        res_dict = collections.OrderedDict()
+        res_dict['x'] = np.concatenate(_libwarpx.get_particle_x(sname), axis=0)
+        res_dict['y'] = np.concatenate(_libwarpx.get_particle_y(sname), axis=0)
+        res_dict['z'] = np.concatenate(_libwarpx.get_particle_z(sname), axis=0)
+        res_dict['ux'] = np.concatenate(_libwarpx.get_particle_ux(sname), axis=0)
+        res_dict['uy'] = np.concatenate(_libwarpx.get_particle_uy(sname), axis=0)
+        res_dict['uz'] = np.concatenate(_libwarpx.get_particle_uz(sname), axis=0)
+        res_dict['w'] = np.concatenate(_libwarpx.get_particle_weight(sname), axis=0)
+
+        label_base = f'{species.name}_'
+        df[label_base + 'npart'] = npart_dict[sname]
+
+        # Compare main results
+        for key, val in res_dict.items():
+            df[label_base + key + '_min'] = np.min(val)
+            df[label_base + key + '_max'] = np.max(val)
+            df[label_base + key + '_mean'] = np.mean(val)
+            df[label_base + key + '_std'] = np.std(val)
+
+    assert testing_util.test_df_vs_ref(testname=name, df=df, margin=0.3)
