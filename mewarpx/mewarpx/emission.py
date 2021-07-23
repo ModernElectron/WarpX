@@ -223,6 +223,9 @@ class FixedNumberInjector(Injector):
               f"timesteps.")
         callbacks.installparticleinjection(self.inject_particles)
 
+        # add E_total PID to this species
+        self.species.add_pid("E_total")
+
     def inject_particles(self):
         """Perform the actual injection!"""
         effective_it = mwxrun.get_it() - self.injectoffset
@@ -258,7 +261,7 @@ class FixedNumberInjector(Injector):
                 uz=particles_dict['vz'],
                 w=particles_dict['w'],
                 unique_particles=self.unique_particles,
-                # E_total=particles_dict['E_total']
+                E_total=particles_dict['E_total']
             )
 
             if self.injector_diag is not None:
